@@ -231,8 +231,8 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.greetingTitle}>{getTimeGreeting()}</Text>
               <Text style={styles.greetingSubtitle}>Welcome to Govi Connect.</Text>
             </View>
-            <TouchableOpacity 
-              style={styles.notificationBtn} 
+            <TouchableOpacity
+              style={styles.notificationBtn}
               onPress={() => navigation.navigate('Notifications')}
             >
               <Ionicons name="notifications-outline" size={28} color="#1B4332" />
