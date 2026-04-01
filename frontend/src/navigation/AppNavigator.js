@@ -19,6 +19,7 @@ import ForumScreen from '../screens/ForumScreen';
 import CropAdvisoryScreen from '../screens/CropAdvisoryScreen';
 import ExpertDashboardScreen from '../screens/ExpertDashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -240,6 +241,74 @@ const ExpertDrawer = () => {
   );
 };
 
+// --- ADMIN DRAWER NAVIGATOR ---
+const AdminDrawer = () => {
+  return (
+    <Drawer.Navigator 
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={{
+        headerStyle: { backgroundColor: '#115C39' },
+        headerTintColor: '#fff',
+        drawerActiveTintColor: '#115C39',
+        drawerLabelStyle: { fontWeight: 'bold' },
+        headerShown: false
+      }}
+    >
+      <Drawer.Screen 
+        name="AdminOverview" 
+        component={AdminDashboardScreen} 
+        options={{ 
+          title: 'System Overview',
+          drawerIcon: ({color}) => <Ionicons name="grid-outline" size={22} color={color} />,
+          headerShown: false 
+        }} 
+      />
+      <Drawer.Screen 
+        name="AdminUsers" 
+        component={ActivityScreen} 
+        options={{ 
+          title: 'Users & Experts',
+          drawerIcon: ({color}) => <Ionicons name="people-outline" size={22} color={color} />,
+          headerShown: true,
+          headerStyle: { backgroundColor: '#115C39' },
+          headerTintColor: '#fff'
+        }} 
+      />
+      <Drawer.Screen 
+        name="AdminExpertRequests" 
+        component={ActivityScreen} 
+        options={{ 
+          title: 'Expert Requests',
+          drawerIcon: ({color}) => <Ionicons name="shield-checkmark-outline" size={22} color={color} />,
+          headerShown: true,
+          headerStyle: { backgroundColor: '#115C39' },
+          headerTintColor: '#fff'
+        }} 
+      />
+      <Drawer.Screen 
+        name="AdminMarketApprovals" 
+        component={ActivityScreen} 
+        options={{ 
+          title: 'Market Approvals',
+          drawerIcon: ({color}) => <Ionicons name="cart-outline" size={22} color={color} />,
+          headerShown: true,
+          headerStyle: { backgroundColor: '#115C39' },
+          headerTintColor: '#fff'
+        }} 
+      />
+      <Drawer.Screen 
+        name="AdminProfile" 
+        component={ProfileScreen} 
+        options={{ 
+          title: 'My Profile',
+          drawerIcon: ({color}) => <Ionicons name="person-outline" size={22} color={color} />,
+          headerShown: false
+        }} 
+      />
+    </Drawer.Navigator>
+  );
+};
+
 
 // --- APP NAVIGATOR ENTRY POINT ---
 const AppNavigator = ({ userToken, userRole }) => {
@@ -252,6 +321,11 @@ const AppNavigator = ({ userToken, userRole }) => {
             <Stack.Screen name="GetStarted" component={GetStartedScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
+        ) : userRole === 'Admin' ? (
+          // ADMIN APP STACK
+          <>
+            <Stack.Screen name="AdminMain" component={AdminDrawer} />
           </>
         ) : userRole === 'Expert' ? (
           // EXPERT APP STACK
