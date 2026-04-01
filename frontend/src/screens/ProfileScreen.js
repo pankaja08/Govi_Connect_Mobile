@@ -21,10 +21,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import apiClient from '../api/client';
 import { SRI_LANKA_MAP } from '../constants/locations';
+import { AuthContext } from '../../App';
 
 const { width } = Dimensions.get('window');
 
 const ProfileScreen = ({ navigation }) => {
+  const { userRole, signOut } = React.useContext(AuthContext);
+  const isGuest = userRole === 'Guest';
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -42,8 +45,12 @@ const ProfileScreen = ({ navigation }) => {
   useEffect(() => {
     // Force hide header to prevent double header issue
     navigation.setOptions({ headerShown: false });
-    fetchProfile();
-  }, [navigation]);
+    if (!isGuest) {
+      fetchProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [navigation, isGuest]);
 
   const fetchProfile = async () => {
     try {
@@ -208,8 +215,35 @@ const ProfileScreen = ({ navigation }) => {
         </View>
 
         {/* Details Card */}
-        <View style={styles.detailsCard}>
-          <Text style={styles.cardTitle}>Your Personal Details</Text>
+        {isGuest ? (
+          <View style={styles.guestCard}>
+            <View style={styles.guestIconContainer}>
+              <Ionicons name="lock-closed-outline" size={50} color="#2E7D32" />
+            </View>
+            <Text style={styles.guestTitle}>Join Govi Connect</Text>
+            <Text style={styles.guestSubtitle}>
+              Log in to your account to view your farming profile, track your activities, and get personalized recommendations.
+            </Text>
+            
+            <TouchableOpacity 
+              style={styles.guestLoginButton}
+              onPress={() => signOut()}
+            >
+              <LinearGradient
+                colors={['#25B059', '#158C43']}
+                style={styles.gradientButton}
+              >
+                <Text style={styles.guestLoginText}>Login / Register Now</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+            
+            <Text style={styles.guestFooter}>
+              Unlock the full potential of digital farming! 🪴
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.detailsCard}>
+            <Text style={styles.cardTitle}>Your Personal Details</Text>
 
           <DetailRow icon="person-outline" label="Full Name" value={user?.name} field="name" />
           <DetailRow icon="card-outline" label="NIC Number" value={user?.nic} field="nic" />
@@ -250,6 +284,7 @@ const ProfileScreen = ({ navigation }) => {
             </TouchableOpacity>
           )}
         </View>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -475,6 +510,65 @@ const styles = StyleSheet.create({
   optionText: {
     fontSize: 16,
     color: '#333'
+  },
+  guestCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    borderRadius: 25,
+    padding: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 8,
+    marginTop: -20,
+    alignItems: 'center'
+  },
+  guestIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20
+  },
+  guestTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10
+  },
+  guestSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 30,
+    paddingHorizontal: 10
+  },
+  guestLoginButton: {
+    width: '100%',
+    height: 60,
+    borderRadius: 15,
+    overflow: 'hidden',
+    marginBottom: 20
+  },
+  gradientButton: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  guestLoginText: {
+    color: '#fff',
+    fontSize: 18,
+    fontWeight: 'bold'
+  },
+  guestFooter: {
+    fontSize: 14,
+    color: '#2E7D32',
+    fontWeight: '600',
+    marginTop: 10
   }
 });
 

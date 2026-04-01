@@ -26,7 +26,8 @@ const Tab = createBottomTabNavigator();
 
 // --- CUSTOM DRAWER CONTENT ---
 const CustomDrawerContent = (props) => {
-  const { signOut } = React.useContext(AuthContext);
+  const { signOut, userRole } = React.useContext(AuthContext);
+  const isGuest = userRole === 'Guest';
 
   const handleLogout = async () => {
     if (Platform.OS === 'web') {
@@ -51,6 +52,11 @@ const CustomDrawerContent = (props) => {
     }
   };
 
+  const handleLoginRedirect = async () => {
+    // For guest users, signing out clears the guest token and shows auth stack
+    await signOut();
+  };
+
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{flex: 1, backgroundColor: '#fff'}}>
       <View style={styles.drawerHeader}>
@@ -65,12 +71,19 @@ const CustomDrawerContent = (props) => {
         <DrawerItemList {...props} />
       </View>
 
-      {/* Logout Section at bottom */}
+      {/* Auth Section at bottom */}
       <View style={styles.authSection}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color="#f44336" />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+        {isGuest ? (
+          <TouchableOpacity style={styles.loginButton} onPress={handleLoginRedirect}>
+            <Ionicons name="log-in-outline" size={22} color="#2E7D32" />
+            <Text style={styles.loginText}>Login to System</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={22} color="#f44336" />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </DrawerContentScrollView>
   );
@@ -325,6 +338,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#f44336',
+    marginLeft: 10
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    padding: 15,
+    borderRadius: 12,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#2E7D32'
+  },
+  loginText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2E7D32',
     marginLeft: 10
   }
 });
