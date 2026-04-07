@@ -12,6 +12,7 @@ dns.setDefaultResultOrder('ipv4first');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const activityRoutes = require('./routes/activityRoutes');
+const forumRoutes = require('./routes/forumRoutes');
 
 const app = express();
 
@@ -23,24 +24,22 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/forum', forumRoutes);
 
 // Database connection
 const DB = process.env.MONGODB_URI || 'mongodb://localhost:27017/gosconnect';
 
-// 2. DEBUG LOG to see what is actually loading
-console.log("==== CHECKING DB STRING ====");
-console.log(DB);
-console.log("============================");
+console.log('🔌 Connecting to MongoDB...');
 
 mongoose.connect(DB, {
-  serverSelectionTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 30000,
+  connectTimeoutMS: 30000,
   family: 4, // Force IPv4
 })
   .then(() => console.log('✅ DB connection successful!'))
   .catch(err => {
-    console.log('❌ DB connection error:');
-    console.error(err);
-    process.exit(1); // Stop the server if DB fails
+    console.error('❌ DB connection error:', err.message);
+    console.log('⚠️  Server continuing without DB — will retry on next request.');
   });
 
 // Global Error Handler

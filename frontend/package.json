@@ -41,7 +41,7 @@
     "@babel/plugin-transform-shorthand-properties": "^7.27.1",
     "@babel/plugin-transform-spread": "^7.28.6",
     "@babel/plugin-transform-template-literals": "^7.27.1",
-    "babel-preset-expo": "^55.0.14-canary-20260328-2049187"
+    "babel-preset-expo": "~54.0.1"
   },
   "private": true
 }
