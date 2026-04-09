@@ -20,6 +20,7 @@ import CropAdvisoryScreen from '../screens/CropAdvisoryScreen';
 import ExpertDashboardScreen from '../screens/ExpertDashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
+import AdminUsersScreen from '../screens/AdminUsersScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -265,13 +266,11 @@ const AdminDrawer = () => {
       />
       <Drawer.Screen 
         name="AdminUsers" 
-        component={ActivityScreen} 
+        component={AdminUsersScreen} 
         options={{ 
           title: 'Users & Experts',
           drawerIcon: ({color}) => <Ionicons name="people-outline" size={22} color={color} />,
-          headerShown: true,
-          headerStyle: { backgroundColor: '#115C39' },
-          headerTintColor: '#fff'
+          headerShown: false
         }} 
       />
       <Drawer.Screen 
