@@ -157,3 +157,70 @@ exports.getCommonQuestions = async (req, res) => {
     res.status(500).json({ status: 'error', message: err.message });
   }
 };
+
+// DELETE an answer (only author, within 1 hour)
+exports.deleteAnswer = async (req, res) => {
+  try {
+    const { questionId, answerId } = req.params;
+    const userId = req.user?._id;
+
+    const question = await Question.findById(questionId);
+    if (!question) return res.status(404).json({ status: 'fail', message: 'Question not found' });
+
+    const answer = question.answers.id(answerId);
+    if (!answer) return res.status(404).json({ status: 'fail', message: 'Answer not found' });
+
+    if (answer.author.toString() !== userId.toString()) {
+      return res.status(403).json({ status: 'fail', message: 'Not authorized to delete this answer' });
+    }
+
+    const ONE_HOUR = 60 * 60 * 1000;
+    if (Date.now() - new Date(answer.createdAt).getTime() > ONE_HOUR) {
+      return res.status(403).json({ status: 'fail', message: 'Edit/delete window (1 hour) has passed' });
+    }
+
+    question.answers.pull(answerId);
+    question.answerCount = question.answers.length;
+    await question.save();
+
+    res.status(200).json({ status: 'success', message: 'Answer deleted', data: { question } });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};
+
+// PATCH edit an answer (only author, within 1 hour)
+exports.editAnswer = async (req, res) => {
+  try {
+    const { questionId, answerId } = req.params;
+    const { text } = req.body;
+    const userId = req.user?._id;
+
+    const question = await Question.findById(questionId);
+    if (!question) return res.status(404).json({ status: 'fail', message: 'Question not found' });
+
+    const answer = question.answers.id(answerId);
+    if (!answer) return res.status(404).json({ status: 'fail', message: 'Answer not found' });
+
+    if (answer.author.toString() !== userId.toString()) {
+      return res.status(403).json({ status: 'fail', message: 'Not authorized to edit this answer' });
+    }
+
+    const ONE_HOUR = 60 * 60 * 1000;
+    if (Date.now() - new Date(answer.createdAt).getTime() > ONE_HOUR) {
+      return res.status(403).json({ status: 'fail', message: 'Edit/delete window (1 hour) has passed' });
+    }
+
+    if (text && text.trim().length >= 5) {
+      answer.text = text.trim();
+    } else {
+      return res.status(400).json({ status: 'fail', message: 'Answer must be at least 5 characters' });
+    }
+
+    await question.save();
+    
+    res.status(200).json({ status: 'success', data: { question } });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: err.message });
+  }
+};

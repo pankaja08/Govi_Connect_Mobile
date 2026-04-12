@@ -16,6 +16,11 @@ const apiClient = axios.create({
 // Interceptor to add JWT token to requests
 apiClient.interceptors.request.use(
   async (config) => {
+    // Disable caching for GET requests, particularly for Web
+    if (config.method === 'get') {
+      config.params = { ...config.params, _t: Date.now() };
+    }
+
     const token = await AsyncStorage.getItem('userToken');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;

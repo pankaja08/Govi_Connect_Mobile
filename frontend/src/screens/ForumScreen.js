@@ -63,13 +63,10 @@ const formatDate = (dateStr) => {
   return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
 };
 
-const getInitials = (name = '') =>
-  name
-    .split(' ')
-    .map((w) => w[0])
-    .join('')
-    .toUpperCase()
-    .slice(0, 2);
+const getInitials = (name = '') => {
+  if (!name) return 'U';
+  return name.charAt(0).toUpperCase();
+};
 
 // ─── Category Badge ─────────────────────────────────────────────────────────
 const CategoryBadge = ({ category }) => {
@@ -82,55 +79,52 @@ const CategoryBadge = ({ category }) => {
 };
 
 // ─── Avatar ──────────────────────────────────────────────────────────────────
-const Avatar = ({ name, role, size = 38 }) => {
+const Avatar = ({ name, role, size = 42 }) => {
   const isExpert = role === 'Expert';
-  const bg = isExpert ? '#1A6B3E' : '#4CAF50';
+  const bg = isExpert ? '#FBC02D' : '#F1F8E9';
+  const textColor = isExpert ? '#FFF' : '#2E7D32';
+  const borderColor = isExpert ? '#FBC02D' : '#A5D6A7';
   return (
-    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: bg }]}>
-      <Text style={[styles.avatarText, { fontSize: size * 0.35 }]}>{getInitials(name)}</Text>
+    <View style={[styles.avatar, { width: size, height: size, borderRadius: size / 2, backgroundColor: bg, borderColor, borderWidth: 1 }]}>
+      <Text style={[styles.avatarText, { fontSize: size * 0.45, color: textColor }]}>{getInitials(name)}</Text>
     </View>
   );
 };
 
 // ─── Answer Card ─────────────────────────────────────────────────────────────
 const AnswerCard = ({ answer }) => (
-  <View style={styles.answerCard}>
-    <View style={styles.answerHeader}>
-      <Avatar name={answer.authorName} role={answer.authorRole} size={30} />
-      <View style={{ marginLeft: 8, flex: 1 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Text style={styles.answerAuthor}>{answer.authorName}</Text>
-          {answer.authorRole === 'Expert' && (
-            <View style={styles.expertTag}><Text style={styles.expertTagText}>Expert</Text></View>
-          )}
-        </View>
-        <Text style={styles.answerTime}>{formatDate(answer.createdAt)}</Text>
+  <View style={styles.cardRow}>
+    <View style={styles.leftColumn}>
+      <Avatar name={answer.authorName} role={answer.authorRole} />
+      <Text style={styles.authorName} numberOfLines={2}>{answer.authorName}</Text>
+      <View style={[styles.roleBadge, answer.authorRole === 'Expert' ? styles.roleBadgeExpert : styles.roleBadgeUser]}>
+        <Text style={[styles.roleBadgeText, answer.authorRole === 'Expert' ? styles.roleTextExpert : styles.roleTextUser]}>
+          {answer.authorRole?.toUpperCase() || 'USER'}
+        </Text>
       </View>
+      <Text style={styles.dateText}>{formatDate(answer.createdAt)}</Text>
     </View>
-    <Text style={styles.answerText}>{answer.text}</Text>
+
+    <View style={styles.rightColumn}>
+       <View style={styles.answerBox}>
+          <Text style={styles.answerBoxText}>{answer.text}</Text>
+          {answer.authorRole === 'Expert' && (
+            <View style={styles.checkmarkBadge}>
+               <Ionicons name="checkmark" size={12} color="#fff" />
+            </View>
+          )}
+       </View>
+    </View>
   </View>
 );
 
 // ─── Question Card ────────────────────────────────────────────────────────────
 const QuestionCard = ({ question, onAddAnswer, currentUserId, onDelete, onEdit }) => {
-  const [expanded, setExpanded] = useState(false);
   const [answerText, setAnswerText] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const [showInput, setShowInput] = useState(false);
 
-  const toggle = () => {
-    Animated.timing(rotateAnim, {
-      toValue: expanded ? 0 : 1,
-      duration: 200,
-      easing: Easing.out(Easing.quad),
-      useNativeDriver: true,
-    }).start();
-    setExpanded(!expanded);
-  };
-
-  const rotate = rotateAnim.interpolate({ inputRange: [0, 1], outputRange: ['0deg', '90deg'] });
-
-  const isOwner = currentUserId && question.author === currentUserId;
+  const isOwner = currentUserId && (question.author === currentUserId || question.author?._id === currentUserId);
   const withinEditWindow = Date.now() - new Date(question.createdAt).getTime() < 3600000;
   const canModify = isOwner && withinEditWindow;
 
@@ -143,88 +137,92 @@ const QuestionCard = ({ question, onAddAnswer, currentUserId, onDelete, onEdit }
     await onAddAnswer(question._id, answerText.trim());
     setAnswerText('');
     setSubmitting(false);
+    setShowInput(false);
   };
+
+  const hasAnswers = question.answers && question.answers.length > 0;
+  // Determine title for responses section
+  const hasExpert = question.answers?.some(a => a.authorRole === 'Expert');
 
   return (
     <View style={styles.questionCard}>
-      {/* Header */}
-      <View style={styles.questionHeader}>
-        <Avatar name={question.authorName} role={question.authorRole} />
-        <View style={styles.questionMeta}>
-          <Text style={styles.questionAuthor}>{question.authorName}</Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={styles.questionRole}>{question.authorRole?.toUpperCase()}</Text>
-            <Text style={styles.questionTime}>  ·  {formatDate(question.createdAt)}</Text>
+      <View style={styles.cardRow}>
+        {/* Left Column */}
+        <View style={styles.leftColumn}>
+          <Avatar name={question.authorName} role={question.authorRole} />
+          <Text style={styles.authorName} numberOfLines={2}>{question.authorName}</Text>
+          <View style={[styles.roleBadge, question.authorRole === 'Expert' ? styles.roleBadgeExpert : styles.roleBadgeUser]}>
+            <Text style={[styles.roleBadgeText, question.authorRole === 'Expert' ? styles.roleTextExpert : styles.roleTextUser]}>
+              {question.authorRole?.toUpperCase() || 'USER'}
+            </Text>
           </View>
+          <Text style={styles.dateText}>{formatDate(question.createdAt)}</Text>
         </View>
-        {canModify && (
-          <View style={styles.actionBtns}>
-            <TouchableOpacity onPress={() => onEdit(question)} style={styles.iconAction}>
-              <Ionicons name="create-outline" size={18} color="#1565C0" />
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => onDelete(question._id)} style={styles.iconAction}>
-              <Ionicons name="trash-outline" size={18} color="#E53935" />
-            </TouchableOpacity>
-          </View>
-        )}
-      </View>
 
-      {/* Question Text */}
-      <Text style={styles.questionText}>{question.text}</Text>
-
-      {/* Category */}
-      <CategoryBadge category={question.category} />
-
-      {/* Footer */}
-      <TouchableOpacity style={styles.questionFooter} onPress={toggle} activeOpacity={0.7}>
-        <View style={styles.answerCountRow}>
-          <Ionicons name="chatbubble-outline" size={16} color="#666" />
-          <Text style={styles.answerCountText}>
-            {question.answers?.length ?? question.answerCount ?? 0} answers
-          </Text>
-        </View>
-        <Animated.View style={{ transform: [{ rotate }] }}>
-          <Ionicons name="chevron-forward" size={18} color="#2E7D32" />
-        </Animated.View>
-      </TouchableOpacity>
-
-      {/* Expanded: Answers + Add Answer */}
-      {expanded && (
-        <View style={styles.expandedArea}>
-          {/* Expert Responses label */}
-          <View style={styles.expertResponsesLabel}>
-            <Ionicons name="shield-checkmark-outline" size={14} color="#1A6B3E" />
-            <Text style={styles.expertResponsesText}>Expert Responses</Text>
-          </View>
-
-          {question.answers && question.answers.length > 0 ? (
-            question.answers.map((ans, idx) => <AnswerCard key={idx} answer={ans} />)
-          ) : (
-            <Text style={styles.noAnswersText}>No answers yet. Be the first!</Text>
+        {/* Right Column */}
+        <View style={styles.rightColumn}>
+          {canModify && (
+            <View style={styles.actionBtns}>
+              <TouchableOpacity onPress={() => onEdit(question)} style={styles.iconAction}>
+                <Ionicons name="create-outline" size={16} color="#1565C0" />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => onDelete(question._id)} style={styles.iconAction}>
+                <Ionicons name="trash-outline" size={16} color="#E53935" />
+              </TouchableOpacity>
+            </View>
           )}
 
-          {/* Add Answer Input */}
-          <View style={styles.addAnswerRow}>
-            <TextInput
-              style={styles.answerInput}
-              placeholder="Write your answer..."
-              placeholderTextColor="#aaa"
-              value={answerText}
-              onChangeText={setAnswerText}
-              multiline
-            />
-            <TouchableOpacity
-              style={[styles.sendBtn, submitting && { opacity: 0.5 }]}
-              onPress={handleSubmitAnswer}
-              disabled={submitting}
-            >
-              {submitting ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Ionicons name="send" size={18} color="#fff" />
-              )}
+          <Text style={styles.questionTitle}>{question.text}</Text>
+          
+          <View style={{ alignSelf: 'flex-start', marginTop: 10 }}>
+            <CategoryBadge category={question.category} />
+          </View>
+
+          <View style={styles.answerCountContainer}>
+            <TouchableOpacity style={styles.answerCountBubble} onPress={() => setShowInput(!showInput)}>
+              <Ionicons name="chatbubbles-outline" size={14} color="#2E7D32" style={{marginRight: 6}} />
+              <Text style={styles.answerCountText}>{question.answers?.length || question.answerCount || 0} answers</Text>
             </TouchableOpacity>
           </View>
+        </View>
+      </View>
+
+      {hasAnswers && <View style={styles.divider} />}
+
+      {hasAnswers && (
+        <View style={styles.answersSection}>
+          <View style={styles.expertResponsesLabel}>
+            <Ionicons name="chatbox-ellipses-outline" size={18} color="#2E7D32" />
+            <Text style={styles.expertResponsesText}>{hasExpert ? 'Expert Responses' : 'Responses'}</Text>
+          </View>
+
+          {question.answers.map((ans, idx) => (
+             <AnswerCard key={ans._id || idx} answer={ans} />
+          ))}
+        </View>
+      )}
+
+      {showInput && (
+        <View style={styles.addAnswerRow}>
+          <TextInput
+            style={styles.answerInput}
+            placeholder="Write your answer..."
+            placeholderTextColor="#aaa"
+            value={answerText}
+            onChangeText={setAnswerText}
+            multiline
+          />
+          <TouchableOpacity
+            style={[styles.sendBtn, submitting && { opacity: 0.5 }]}
+            onPress={handleSubmitAnswer}
+            disabled={submitting}
+          >
+            {submitting ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Ionicons name="send" size={16} color="#fff" />
+            )}
+          </TouchableOpacity>
         </View>
       )}
     </View>
@@ -250,6 +248,8 @@ const ForumScreen = () => {
   const [editText, setEditText] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showEditCategoryDropdown, setShowEditCategoryDropdown] = useState(false);
+  const [categoryError, setCategoryError] = useState(false);
 
   // Debounce search
   useEffect(() => {
@@ -289,7 +289,8 @@ const ForumScreen = () => {
 
   const handleAskQuestion = async () => {
     if (!askCategory) {
-      Alert.alert('Select a category', 'Please select a category before asking.');
+      setCategoryError(true);
+      setTimeout(() => setCategoryError(false), 3000);
       return;
     }
     if (askText.trim().length < 10) {
@@ -301,6 +302,8 @@ const ForumScreen = () => {
       await apiClient.post('/forum', { text: askText.trim(), category: askCategory });
       setAskText('');
       setAskCategory('');
+      setSelectedCategory('');
+      setSearchText('');
       Alert.alert('✅ Success', 'Your question has been posted!');
       fetchQuestions();
     } catch (err) {
@@ -321,32 +324,44 @@ const ForumScreen = () => {
     }
   };
 
-  const handleDeleteQuestion = (questionId) => {
-    Alert.alert(
-      'Delete Question',
-      'Are you sure you want to delete this question?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await apiClient.delete(`/forum/${questionId}`);
-              setQuestions(prev => prev.filter(q => q._id !== questionId));
-            } catch (err) {
-              Alert.alert('Error', err.response?.data?.message || 'Could not delete.');
-            }
-          }
-        }
-      ]
-    );
+  const handleDeleteQuestion = async (questionId) => {
+    // Standard confirm for web, Alert for native
+    const proceed = Platform.OS === 'web' 
+      ? window.confirm("Are you sure you want to delete this question?") 
+      : true;
+
+    if (!proceed) return;
+
+    const performDelete = async () => {
+      try {
+        await apiClient.delete(`/forum/${questionId}`);
+        setQuestions(prev => prev.filter(q => q._id !== questionId));
+      } catch (err) {
+        const errorMsg = err.response?.data?.message || 'Could not delete.';
+        if (Platform.OS === 'web') alert(errorMsg);
+        else Alert.alert('Error', errorMsg);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      await performDelete();
+    } else {
+      Alert.alert(
+        'Delete Question',
+        'Are you sure you want to delete this question?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: performDelete }
+        ]
+      );
+    }
   };
 
   const handleOpenEdit = (question) => {
     setEditingQuestion(question);
     setEditText(question.text);
     setEditCategory(question.category);
+    setShowEditCategoryDropdown(false);
     setShowEditModal(true);
   };
 
@@ -369,16 +384,23 @@ const ForumScreen = () => {
     setAskText(text);
   };
 
-  const activeSortLabel = SORT_OPTIONS.find(o => o.key === sortKey)?.label || 'Recents';
+  const activeSortLabel = SORT_OPTIONS.find(o => o.key === sortKey)?.label || 'Newest First';
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <StatusBar style="dark" />
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView 
+        style={{ flex: 1 }} 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
+      >
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
+          showsHorizontalScrollIndicator={false}
+          bounces={false}
+          overScrollMode="never"
           keyboardShouldPersistTaps="handled"
         >
 
@@ -431,10 +453,11 @@ const ForumScreen = () => {
             </TouchableOpacity>
 
             {/* Sort Dropdown */}
-            <View style={{ position: 'relative' }}>
+            <View style={{ position: 'relative', zIndex: 5000, elevation: 5000 }}>
               <TouchableOpacity
                 style={[styles.filterBtn, styles.sortBtn]}
                 onPress={() => setShowSortMenu(!showSortMenu)}
+                activeOpacity={0.7}
               >
                 <Text style={styles.filterBtnText}>{activeSortLabel}</Text>
                 <Ionicons name="chevron-down" size={15} color="#2E7D32" style={{ marginLeft: 4 }} />
@@ -448,12 +471,6 @@ const ForumScreen = () => {
                       style={[styles.sortOption, sortKey === opt.key && styles.sortOptionActive]}
                       onPress={() => { setSortKey(opt.key); setShowSortMenu(false); }}
                     >
-                      <Ionicons
-                        name={opt.icon}
-                        size={16}
-                        color={sortKey === opt.key ? '#2E7D32' : '#555'}
-                        style={{ marginRight: 8 }}
-                      />
                       <Text style={[styles.sortOptionText, sortKey === opt.key && { color: '#2E7D32', fontWeight: '700' }]}>
                         {opt.label}
                       </Text>
@@ -512,43 +529,81 @@ const ForumScreen = () => {
             <Text style={styles.noteText}>  Note: You can edit or delete your question within 1 hour of posting.</Text>
           </View>
 
-          {/* ─── ASK A QUESTION BAR ─── */}
-          <View style={styles.askBar}>
-            <View style={styles.askAvatarCircle}>
-              <Ionicons name="person" size={18} color="#fff" />
+          {/* ─── ASK A QUESTION CARD ─── */}
+          <View style={styles.askContainer}>
+            <View style={styles.askHeaderRow}>
+              <View style={styles.askAvatarCircle}>
+                <Ionicons name="help-circle" size={20} color="#fff" />
+              </View>
+              <View style={{ flex: 1, position: 'relative', zIndex: 10000 }}>
+                <TouchableOpacity
+                  style={styles.categoryDropdownButton}
+                  onPress={() => setShowCategoryPicker(!showCategoryPicker)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={askCategory ? styles.categorySelectedText : styles.categoryPlaceholderText} numberOfLines={1}>
+                    {askCategory || 'Select Category'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color="#333" />
+                </TouchableOpacity>
+
+                {showCategoryPicker && (
+                  <View style={styles.categoryFloatingDropdown}>
+                    <View style={styles.categoryListHeader}>
+                      <Text style={styles.categoryListHeaderText}>Select Category</Text>
+                    </View>
+                    <ScrollView style={{ maxHeight: 250 }} bounces={false} showsVerticalScrollIndicator={true}>
+                      {CATEGORIES.map(cat => (
+                        <TouchableOpacity
+                          key={cat}
+                          style={styles.categoryItem}
+                          onPress={() => { 
+                            setAskCategory(cat); 
+                            setShowCategoryPicker(false);
+                            setCategoryError(false);
+                          }}
+                        >
+                          <Text style={styles.categoryItemText}>{cat}</Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                )}
+
+                {categoryError && (
+                  <View style={styles.validationTooltip}>
+                    <View style={styles.tooltipPointer} />
+                    <View style={styles.tooltipBody}>
+                      <View style={styles.tooltipIconBox}>
+                        <Ionicons name="warning" size={20} color="#fff" />
+                      </View>
+                      <Text style={styles.tooltipText}>Please select an item in the list.</Text>
+                    </View>
+                  </View>
+                )}
+              </View>
             </View>
 
-            {/* Category Picker */}
-            <TouchableOpacity
-              style={styles.categoryPicker}
-              onPress={() => setShowCategoryPicker(true)}
-            >
-              <Text style={askCategory ? styles.categoryPickerTextSelected : styles.categoryPickerTextPlaceholder}>
-                {askCategory || 'Select Category'}
-              </Text>
-              <Ionicons name="chevron-down" size={14} color="#666" />
-            </TouchableOpacity>
-
-            {/* Question Input */}
             <TextInput
-              style={styles.askInput}
-              placeholder="Ask a question..."
-              placeholderTextColor="#aaa"
+              style={styles.askInputLarge}
+              placeholder="What would you like to ask the community?"
+              placeholderTextColor="#999"
               value={askText}
               onChangeText={setAskText}
-              multiline={false}
+              multiline
+              numberOfLines={3}
+              textAlignVertical="top"
             />
 
-            {/* Ask Button */}
             <TouchableOpacity
-              style={[styles.askBtn, submittingQuestion && { opacity: 0.6 }]}
+              style={[styles.askSubmitBtn, submittingQuestion && { opacity: 0.6 }]}
               onPress={handleAskQuestion}
               disabled={submittingQuestion}
             >
               {submittingQuestion ? (
                 <ActivityIndicator size="small" color="#fff" />
               ) : (
-                <Text style={styles.askBtnText}>Ask</Text>
+                <Text style={styles.askSubmitBtnText}>Post Question</Text>
               )}
             </TouchableOpacity>
           </View>
@@ -584,33 +639,8 @@ const ForumScreen = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* ─── CATEGORY PICKER MODAL ─── */}
-      <Modal visible={showCategoryPicker} transparent animationType="slide">
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowCategoryPicker(false)}
-        >
-          <View style={styles.pickerModal}>
-            <Text style={styles.pickerTitle}>Select a Category</Text>
-            {CATEGORIES.map(cat => (
-              <TouchableOpacity
-                key={cat}
-                style={[styles.pickerOption, askCategory === cat && styles.pickerOptionActive]}
-                onPress={() => { setAskCategory(cat); setShowCategoryPicker(false); }}
-              >
-                <View style={[styles.pickerDot, { backgroundColor: CATEGORY_COLORS[cat]?.text || '#888' }]} />
-                <Text style={[styles.pickerOptionText, askCategory === cat && { color: '#2E7D32', fontWeight: '700' }]}>
-                  {cat}
-                </Text>
-                {askCategory === cat && <Ionicons name="checkmark" size={18} color="#2E7D32" />}
-              </TouchableOpacity>
-            ))}
-          </View>
-        </TouchableOpacity>
-      </Modal>
 
-      {/* ─── EDIT QUESTION MODAL ─── */}
+
       <Modal visible={showEditModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
           <View style={styles.editModal}>
@@ -623,18 +653,46 @@ const ForumScreen = () => {
               placeholder="Edit your question..."
               placeholderTextColor="#aaa"
             />
-            <TouchableOpacity
-              style={styles.editCategoryBtn}
-              onPress={() => {
-                setShowEditModal(false);
-                setTimeout(() => setShowCategoryPicker(true), 300);
-              }}
-            >
-              <Text style={{ color: editCategory ? '#333' : '#aaa' }}>{editCategory || 'Select Category'}</Text>
-              <Ionicons name="chevron-down" size={14} color="#666" />
-            </TouchableOpacity>
+            
+            <View style={{ position: 'relative', zIndex: 3000 }}>
+              <TouchableOpacity
+                style={styles.editCategoryBtn}
+                onPress={() => setShowEditCategoryDropdown(!showEditCategoryDropdown)}
+              >
+                <Text style={{ color: editCategory ? '#2E7D32' : '#aaa', fontWeight: editCategory ? '700' : '500' }}>
+                  {editCategory || 'Select Category'}
+                </Text>
+                <Ionicons name="chevron-down" size={14} color="#666" />
+              </TouchableOpacity>
+
+              {showEditCategoryDropdown && (
+                <View style={styles.editCategoryFloatingDropdown}>
+                  <ScrollView style={{ maxHeight: 200 }}>
+                    {CATEGORIES.map(cat => (
+                      <TouchableOpacity
+                        key={cat}
+                        style={styles.editCategoryItem}
+                        onPress={() => {
+                          setEditCategory(cat);
+                          setShowEditCategoryDropdown(false);
+                        }}
+                      >
+                        <Text style={styles.editCategoryItemText}>{cat}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
             <View style={styles.editModalActions}>
-              <TouchableOpacity style={styles.cancelBtn} onPress={() => setShowEditModal(false)}>
+              <TouchableOpacity 
+                style={styles.cancelBtn} 
+                onPress={() => {
+                  setShowEditModal(false);
+                  setShowEditCategoryDropdown(false);
+                }}
+              >
                 <Text style={styles.cancelBtnText}>Cancel</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.saveBtn} onPress={handleSaveEdit}>
@@ -651,7 +709,11 @@ const ForumScreen = () => {
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#F5F8F5' },
   scrollView: { flex: 1 },
-  scrollContent: { paddingBottom: 20 },
+  scrollContent: { 
+    flexGrow: 1, 
+    paddingBottom: 40,
+    minHeight: '100%' 
+  },
 
   // Header
   header: {
@@ -695,13 +757,14 @@ const styles = StyleSheet.create({
   },
   searchInput: { flex: 1, marginLeft: 10, fontSize: 15, color: '#333', fontWeight: '500' },
 
-  // Filter row
   filterRow: {
     flexDirection: 'row',
     paddingHorizontal: 16,
     gap: 10,
     marginBottom: 6,
     alignItems: 'center',
+    zIndex: 5000, 
+    elevation: 5000,
   },
   filterBtn: {
     flexDirection: 'row',
@@ -710,41 +773,43 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     paddingHorizontal: 14,
     paddingVertical: 8,
-    borderWidth: 1.5,
-    borderColor: '#2E7D32',
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
     gap: 5,
   },
   filterBtnActive: { backgroundColor: '#2E7D32', borderColor: '#2E7D32' },
-  filterBtnText: { color: '#2E7D32', fontWeight: '700', fontSize: 13 },
+  filterBtnText: { color: '#2E7D32', fontWeight: '600', fontSize: 13 },
   filterBtnTextActive: { color: '#fff' },
-  sortBtn: { marginLeft: 'auto' },
+  sortBtn: { 
+    marginLeft: 'auto',
+    borderWidth: 1.5,
+    borderColor: '#000',
+    backgroundColor: '#F1F8E9',
+    paddingHorizontal: 16,
+  },
   sortDropdown: {
     position: 'absolute',
-    top: 44,
+    top: 50, // Increased to ensure it's below the button
     right: 0,
     backgroundColor: '#fff',
-    borderRadius: 14,
-    elevation: 8,
+    borderRadius: 8,
+    elevation: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    shadowOffset: { width: 0, height: 10 },
     shadowOpacity: 0.15,
-    shadowRadius: 10,
-    zIndex: 999,
-    minWidth: 180,
+    shadowRadius: 15,
+    zIndex: 6000,
+    minWidth: 160,
     borderWidth: 1,
-    borderColor: '#E8F5E9',
-    overflow: 'hidden',
+    borderColor: '#F0F0F0',
+    paddingVertical: 6,
   },
   sortOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
     paddingHorizontal: 16,
-    paddingVertical: 13,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    paddingVertical: 14,
   },
-  sortOptionActive: { backgroundColor: '#F1F8E9' },
-  sortOptionText: { fontSize: 14, color: '#444', fontWeight: '600' },
+  sortOptionActive: { backgroundColor: '#F9F9F9' },
+  sortOptionText: { fontSize: 16, color: '#263238', fontWeight: '400' },
 
   // Category chips
   categoryChipsScroll: { marginBottom: 10 },
@@ -800,62 +865,107 @@ const styles = StyleSheet.create({
   },
   noteText: { fontSize: 12, color: '#E65100', flex: 1, fontWeight: '500' },
 
-  // Ask bar
-  askBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  // New Ask Container
+  askContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 18,
     marginHorizontal: 16,
     marginBottom: 20,
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 10,
-    elevation: 3,
+    padding: 16,
+    elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
-    borderWidth: 1.5,
+    shadowRadius: 10,
+    borderWidth: 1,
     borderColor: '#C8E6C9',
-    gap: 8,
+    zIndex: 10000, // Ensure the whole container is highly layered
+  },
+  askHeaderRow: { 
+    flexDirection: 'row', 
+    alignItems: 'center', 
+    gap: 12, 
+    marginBottom: 16,
+    zIndex: 11000,
   },
   askAvatarCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
     backgroundColor: '#2E7D32',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  categoryPicker: {
+  categoryDropdownButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F1F8E9',
-    borderRadius: 10,
-    paddingHorizontal: 10,
-    paddingVertical: 8,
+    justifyContent: 'space-between',
+    backgroundColor: '#fff',
+    borderRadius: 30,
+    paddingHorizontal: 18,
+    height: 52,
+    borderWidth: 2,
+    borderColor: '#2ecc71',
+  },
+  categoryPlaceholderText: { color: '#4F4F4F', fontSize: 16, fontWeight: '500' },
+  categorySelectedText: { color: '#2E7D32', fontSize: 16, fontWeight: '700' },
+
+  categoryFloatingDropdown: {
+    position: 'absolute',
+    top: 55,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 4,
+    elevation: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 15 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+    zIndex: 20000,
     borderWidth: 1,
-    borderColor: '#A5D6A7',
-    gap: 4,
+    borderColor: '#AAAAAA',
   },
-  categoryPickerTextPlaceholder: { fontSize: 12, color: '#888' },
-  categoryPickerTextSelected: { fontSize: 12, color: '#1B5E20', fontWeight: '700' },
-  askInput: {
-    flex: 1,
-    fontSize: 13,
-    color: '#333',
-    borderBottomWidth: 1.5,
-    borderColor: '#E0E0E0',
-    paddingVertical: 4,
-  },
-  askBtn: {
-    backgroundColor: '#2E7D32',
-    borderRadius: 12,
+  categoryListHeader: {
+    backgroundColor: '#9E9E9E',
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
-  askBtnText: { color: '#fff', fontWeight: '800', fontSize: 14 },
+  categoryListHeaderText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  categoryItem: {
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+  },
+  categoryItemText: { fontSize: 16, color: '#333', fontWeight: '500' },
+  categoryPickerTextPlaceholder: { fontSize: 13, color: '#666', fontWeight: '500' },
+  categoryPickerTextSelected: { fontSize: 13, color: '#1B5E20', fontWeight: '700' },
+  askInputLarge: {
+    backgroundColor: '#FAFAFA',
+    borderRadius: 12,
+    padding: 12,
+    fontSize: 14,
+    color: '#333',
+    minHeight: 80,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  askSubmitBtn: {
+    backgroundColor: '#2E7D32',
+    borderRadius: 14,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 2,
+  },
+  askSubmitBtnText: { color: '#fff', fontWeight: '800', fontSize: 15, letterSpacing: 0.5 },
 
   // Section header
   discussionsHeader: {
@@ -879,32 +989,144 @@ const styles = StyleSheet.create({
   // Question card
   questionCard: {
     backgroundColor: '#fff',
-    borderRadius: 18,
+    borderRadius: 16,
     marginHorizontal: 16,
-    marginBottom: 14,
+    marginBottom: 20,
     padding: 16,
-    elevation: 2,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.07,
-    shadowRadius: 8,
+    shadowOpacity: 0.05,
+    shadowRadius: 5,
     borderWidth: 1,
-    borderColor: '#ECF5EC',
+    borderColor: '#E8F5E9',
   },
-  questionHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 12, gap: 10 },
+  cardRow: {
+    flexDirection: 'row',
+  },
+  leftColumn: {
+    width: 65,
+    alignItems: 'center',
+    marginRight: 10,
+  },
   avatar: { justifyContent: 'center', alignItems: 'center' },
   avatarText: { color: '#fff', fontWeight: '800' },
-  questionMeta: { flex: 1 },
-  questionAuthor: { fontSize: 14, fontWeight: '700', color: '#222' },
-  questionRole: { fontSize: 11, color: '#2E7D32', fontWeight: '700' },
-  questionTime: { fontSize: 11, color: '#999', fontWeight: '500' },
-  actionBtns: { flexDirection: 'row', gap: 6 },
+  authorName: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#333',
+    marginTop: 6,
+    textAlign: 'center',
+  },
+  roleBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 10,
+    marginTop: 6,
+  },
+  roleBadgeExpert: { backgroundColor: '#FFECB3' },
+  roleBadgeUser: { backgroundColor: '#E8F5E9' },
+  roleBadgeText: { fontSize: 8, fontWeight: '800' },
+  roleTextExpert: { color: '#F57F17' },
+  roleTextUser: { color: '#2E7D32' },
+  dateText: {
+    fontSize: 9,
+    color: '#999',
+    marginTop: 6,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  rightColumn: {
+    flex: 1,
+    position: 'relative',
+  },
+  questionTitle: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#0F5E36',
+    lineHeight: 22,
+    paddingRight: 40,
+  },
+  actionBtns: {
+    flexDirection: 'row',
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    gap: 6,
+    zIndex: 10,
+  },
   iconAction: {
     padding: 6,
     backgroundColor: '#F5F5F5',
     borderRadius: 8,
   },
-  questionText: { fontSize: 15, color: '#1A1A2E', fontWeight: '600', lineHeight: 22, marginBottom: 10 },
+  answerCountContainer: {
+    alignItems: 'flex-end',
+    marginTop: 10,
+  },
+  answerCountBubble: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    borderWidth: 1,
+    borderColor: '#A5D6A7',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  answerCountText: {
+    fontSize: 12,
+    color: '#2E7D32',
+    fontWeight: '800',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginVertical: 16,
+  },
+  answersSection: {
+    marginTop: 4,
+  },
+  expertResponsesLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    marginLeft: 75,
+    gap: 8,
+  },
+  expertResponsesText: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: '#1A1A2E',
+  },
+  answerBox: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#A5D6A7',
+    borderRadius: 20,
+    padding: 16,
+    position: 'relative',
+    minHeight: 60,
+  },
+  answerBoxText: {
+    fontSize: 13,
+    color: '#444',
+    lineHeight: 20,
+    fontWeight: '500',
+  },
+  checkmarkBadge: {
+    position: 'absolute',
+    top: -8,
+    right: 12,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#27AE60',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
 
   // Badge
   badge: {
@@ -917,60 +1139,16 @@ const styles = StyleSheet.create({
   },
   badgeText: { fontSize: 11, fontWeight: '700', letterSpacing: 0.3 },
 
-  // Footer
-  questionFooter: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-    paddingTop: 10,
-  },
-  answerCountRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  answerCountText: { fontSize: 13, color: '#888', fontWeight: '500' },
-
-  // Expanded area
-  expandedArea: { marginTop: 14 },
-  expertResponsesLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    gap: 5,
-  },
-  expertResponsesText: { fontSize: 12, color: '#1A6B3E', fontWeight: '700', letterSpacing: 0.3 },
-  noAnswersText: { fontSize: 13, color: '#aaa', textAlign: 'center', paddingVertical: 10 },
-
-  // Answer card
-  answerCard: {
-    backgroundColor: '#F9FBF9',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#E8F5E9',
-  },
-  answerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 6 },
-  answerAuthor: { fontSize: 13, fontWeight: '700', color: '#333' },
-  expertTag: {
-    backgroundColor: '#1A6B3E',
-    borderRadius: 8,
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    marginLeft: 6,
-  },
-  expertTagText: { color: '#fff', fontSize: 10, fontWeight: '700' },
-  answerTime: { fontSize: 11, color: '#999' },
-  answerText: { fontSize: 13, color: '#444', lineHeight: 19 },
-
   // Add answer row
   addAnswerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    marginTop: 8,
+    marginTop: 16,
     backgroundColor: '#F5F5F5',
     borderRadius: 12,
     padding: 8,
+    marginLeft: 75,
   },
   answerInput: {
     flex: 1,
@@ -996,14 +1174,19 @@ const styles = StyleSheet.create({
   // Modals
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.45)',
-    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.6)', // Slightly darker for better focus
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
   pickerModal: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
     padding: 24,
+    width: '100%',
+    maxWidth: 550,
+    alignSelf: 'center',
     paddingBottom: Platform.OS === 'ios' ? 40 : 24,
   },
   pickerTitle: { fontSize: 18, fontWeight: '800', color: '#1B3A1F', marginBottom: 16 },
@@ -1021,10 +1204,15 @@ const styles = StyleSheet.create({
 
   editModal: {
     backgroundColor: '#fff',
-    margin: 20,
-    borderRadius: 20,
-    padding: 24,
-    marginTop: 'auto',
+    borderRadius: 24,
+    padding: 20,
+    width: '92%',
+    maxWidth: 400,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 5 },
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
   },
   editModalTitle: { fontSize: 18, fontWeight: '800', color: '#1B3A1F', marginBottom: 14 },
   editInput: {
@@ -1065,6 +1253,79 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
+  editCategoryFloatingDropdown: {
+    position: 'absolute',
+    top: 50,
+    left: 0,
+    right: 0,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    zIndex: 5000,
+    borderWidth: 1,
+    borderColor: '#E0E8E0',
+    overflow: 'hidden',
+  },
+  editCategoryItem: {
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F5F5F5',
+  },
+  editCategoryItemText: { fontSize: 14, color: '#333', fontWeight: '500' },
+
+  // Validation Tooltip
+  validationTooltip: {
+    position: 'absolute',
+    top: 55,
+    left: 0,
+    zIndex: 15000,
+  },
+  tooltipPointer: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderBottomWidth: 8,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#333',
+    marginLeft: 20,
+  },
+  tooltipBody: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#333',
+    borderRadius: 8,
+    padding: 10,
+    gap: 12,
+    elevation: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+  },
+  tooltipIconBox: {
+    width: 32,
+    height: 28,
+    backgroundColor: '#FF9100', // Orange as in screenshot
+    borderRadius: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tooltipText: {
+    fontSize: 15,
+    color: '#000',
+    fontWeight: '400',
+  },
 });
 
 export default ForumScreen;
