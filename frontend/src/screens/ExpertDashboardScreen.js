@@ -23,8 +23,7 @@ const { width } = Dimensions.get('window');
 const DROPDOWNS = {
   locations: ['All Island', 'Western', 'Central', 'Southern', 'Northern', 'Eastern'],
   seasons: ['Any Season', 'Maha Season', 'Yala Season'],
-  crops: ['Any Crop', 'Paddy', 'Vegetables', 'Fruits', 'Export Crops'],
-  methods: ['Any Method', 'Organic', 'Conventional', 'Hydroponics']
+  crops: ['Any Crop', 'Paddy', 'Vegetables', 'Fruits', 'Export Crops']
 };
 
 const SearchablePicker = ({ label, value, options, onSelect, placeholder }) => {
@@ -81,8 +80,7 @@ const ExpertDashboardScreen = ({ navigation }) => {
     title: '',
     location: 'All Island',
     season: 'Any Season',
-    cropType: 'Any Crop',
-    farmingMethod: 'Any Method'
+    cropType: 'Any Crop'
   });
 
   useEffect(() => {
@@ -98,56 +96,62 @@ const ExpertDashboardScreen = ({ navigation }) => {
     }
   };
 
-  const updateField = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+  const updateField = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handlePublishBlog = () => {
+    if (!formData.title.trim()) {
+      Alert.alert('Missing title', 'Please enter a title for your blog post.');
+      return;
+    }
+
+    Alert.alert('Published', 'Your blog post draft has been saved.');
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        
-        {/* Simple Header */}
         <View style={styles.topHeader}>
-           <TouchableOpacity onPress={() => navigation.openDrawer()}>
-             <Ionicons name="menu" size={30} color="#fff" />
-           </TouchableOpacity>
-           <Text style={styles.topHeaderTitle}>EXPERT PORTAL</Text>
+          <TouchableOpacity onPress={() => navigation.openDrawer()}>
+            <Ionicons name="menu" size={30} color="#fff" />
+          </TouchableOpacity>
+          <Text style={styles.topHeaderTitle}>EXPERT PORTAL</Text>
         </View>
 
         <View style={styles.bannerContainer}>
-            <LinearGradient colors={['#2E7D32', '#1B5E20']} style={styles.welcomeBanner}>
-                <Text style={styles.welcomeSubtitle}>BLOG MANAGEMENT</Text>
-                <Text style={styles.welcomeTitle}>Hello, {user?.name || 'Expert'}!</Text>
-                <Text style={styles.welcomeInfo}>
-                   You are in the Write Blogs section. For answering farmer questions, please visit the Community Forum section.
-                </Text>
-                <Ionicons name="create" size={100} color="rgba(255,255,255,0.07)" style={styles.leafBg} />
-            </LinearGradient>
+          <LinearGradient colors={['#1B5E20', '#2E7D32']} style={styles.welcomeBanner}>
+            <Text style={styles.welcomeSmall}>WELCOME BACK</Text>
+            <Text style={styles.welcomeTitle}>Hello, {user?.name || 'Expert'}!</Text>
+            <Text style={styles.welcomeInfo}>
+              Share your agricultural expertise with Sri Lankan farmers through insightful blog posts.
+            </Text>
+          </LinearGradient>
         </View>
 
         <View style={styles.contentSection}>
-          <Text style={styles.sectionTitle}>📝 Create New Blog</Text>
-          <Text style={styles.sectionSubtitle}>Share your expertise with the farming community</Text>
-          
+          <Text style={styles.pageTitle}>Write a New Blog Post</Text>
+          <Text style={styles.pageSubtitle}>Share your knowledge and help farmers learn better farming practices.</Text>
+
           <View style={styles.formCard}>
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Article Title <Text style={{color:'red'}}>*</Text></Text>
+              <Text style={styles.label}>Article Title <Text style={{ color: 'red' }}>*</Text></Text>
               <TextInput
                 style={styles.textInput}
                 placeholder="E.g., Tips for high-yield organic farming"
                 value={formData.title}
-                onChangeText={(t) => updateField('title', t)}
+                onChangeText={(text) => updateField('title', text)}
               />
             </View>
 
             <View style={styles.row}>
-              <SearchablePicker label="Location" value={formData.location} options={DROPDOWNS.locations} onSelect={(v) => updateField('location', v)} />
+              <SearchablePicker label="Location" value={formData.location} options={DROPDOWNS.locations} onSelect={(value) => updateField('location', value)} />
               <View style={{ width: 15 }} />
-              <SearchablePicker label="Season" value={formData.season} options={DROPDOWNS.seasons} onSelect={(v) => updateField('season', v)} />
+              <SearchablePicker label="Season" value={formData.season} options={DROPDOWNS.seasons} onSelect={(value) => updateField('season', value)} />
             </View>
 
             <View style={styles.row}>
-              <SearchablePicker label="Crop" value={formData.cropType} options={DROPDOWNS.crops} onSelect={(v) => updateField('cropType', v)} />
-              <View style={{ width: 15 }} />
-              <SearchablePicker label="Method" value={formData.farmingMethod} options={DROPDOWNS.methods} onSelect={(v) => updateField('farmingMethod', v)} />
+              <SearchablePicker label="Crop" value={formData.cropType} options={DROPDOWNS.crops} onSelect={(value) => updateField('cropType', value)} />
             </View>
 
             <TouchableOpacity style={styles.imageUploadBox}>
@@ -155,13 +159,11 @@ const ExpertDashboardScreen = ({ navigation }) => {
               <Text style={styles.uploadText}>Upload Cover Image</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.publishBtn}>
+            <TouchableOpacity style={styles.publishBtn} onPress={handlePublishBlog}>
               <Text style={styles.publishBtnText}>Publish Blog Post</Text>
             </TouchableOpacity>
           </View>
         </View>
-
-        <View style={{height: 100}} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -181,13 +183,12 @@ const styles = StyleSheet.create({
   topHeaderTitle: { color: '#F5A623', fontWeight: 'bold', fontSize: 14, marginLeft: 15, letterSpacing: 1 },
   bannerContainer: { padding: 16, backgroundColor: '#2E7D32', borderBottomLeftRadius: 30, borderBottomRightRadius: 30, paddingBottom: 25 },
   welcomeBanner: { borderRadius: 20, padding: 24, overflow: 'hidden' },
-  welcomeSubtitle: { color: '#F5A623', fontWeight: 'bold', fontSize: 11, marginBottom: 4 },
+  welcomeSmall: { color: '#F5A623', fontSize: 12, letterSpacing: 1, fontWeight: '700', marginBottom: 8 },
   welcomeTitle: { color: '#fff', fontSize: 26, fontWeight: 'bold', marginBottom: 12 },
   welcomeInfo: { color: 'rgba(255,255,255,0.85)', fontSize: 12, lineHeight: 18, width: '90%' },
-  leafBg: { position: 'absolute', bottom: -10, right: -10 },
   contentSection: { padding: 16 },
-  sectionTitle: { fontSize: 20, fontWeight: 'bold', color: '#1a1a1a', marginBottom: 4 },
-  sectionSubtitle: { fontSize: 12, color: '#666', marginBottom: 20 },
+  pageTitle: { fontSize: 24, fontWeight: 'bold', color: '#14212A', marginBottom: 8 },
+  pageSubtitle: { fontSize: 14, color: '#56626A', marginBottom: 18 },
   formCard: { backgroundColor: '#fff', borderRadius: 16, padding: 20, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 10 },
   inputGroup: { marginBottom: 16 },
   label: { fontSize: 13, fontWeight: 'bold', color: '#333', marginBottom: 8 },

@@ -1,4 +1,4 @@
-// CACHE_BUST: 1776069677
+// CACHE_BUST: 1776071286
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -21,6 +21,7 @@ import CropAdvisoryScreen from '../screens/CropAdvisoryScreen';
 import ExpertDashboardScreen from '../screens/ExpertDashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
+import ForumQAScreen from '../screens/ForumQ&AScreen';
 
 const Stack = createNativeStackNavigator();
 // Navigation refresh trigger
@@ -333,11 +334,13 @@ const AppNavigator = ({ userToken, userRole }) => {
           // EXPERT APP STACK
           <>
             <Stack.Screen name="ExpertMain" component={ExpertDrawer} />
+            <Stack.Screen name="ForumDetail" component={ForumQAScreen} options={{ headerShown: false }} />
           </>
         ) : (
           // MAIN APP STACK (User Drawer + Sub-screens)
           <>
             <Stack.Screen name="Main" component={MainDrawer} />
+            <Stack.Screen name="ForumDetail" component={ForumQAScreen} options={{ headerShown: false }} />
             <Stack.Screen 
               name="Activities" 
               component={ActivityScreen} 
