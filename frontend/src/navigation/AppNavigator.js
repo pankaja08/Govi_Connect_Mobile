@@ -1,3 +1,4 @@
+// CACHE_BUST: 1776069677
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, Platform } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
@@ -22,6 +23,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 
 const Stack = createNativeStackNavigator();
+// Navigation refresh trigger
 const Drawer = createDrawerNavigator();
 const Tab = createBottomTabNavigator();
 
