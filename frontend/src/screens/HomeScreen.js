@@ -5,24 +5,19 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   TextInput,
   Image,
   Dimensions,
   Platform,
-  FlatList
+  FlatList,
+  useWindowDimensions
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import apiClient from '../api/client';
-
-const { width: viewportWidth } = Dimensions.get('window');
-const ITEM_WIDTH = viewportWidth - 20;
-const ITEM_HEIGHT = 200;
-const ITEM_MARGIN = 10;
-const ITEM_SPACING = 10;
 
 const CAROUSEL_DATA = [
   {
@@ -65,32 +60,19 @@ const CAROUSEL_DATA = [
   }
 ];
 
-const MOCK_BLOGS = [
-  {
-    id: '1',
-    title: 'Cultivating Success: Essential Rice Farming Tips',
-    author: 'Nimal Perera',
-    readTime: '5 min read',
-    image: 'https://images.pexels.com/photos/1459339/pexels-photo-1459339.jpeg?auto=compress&cs=tinysrgb&w=400'
-  },
-  {
-    id: '2',
-    title: 'Organic Pest Control: Natural Solutions for Your Farm',
-    author: 'Sunethra Dias',
-    readTime: 'Oct 26',
-    image: 'https://images.pexels.com/photos/2289163/pexels-photo-2289163.jpeg?auto=compress&cs=tinysrgb&w=400'
-  },
-  {
-    id: '3',
-    title: 'Soil Nutrition: The Key to Sustainable Farming',
-    author: 'Kamal Silva',
-    readTime: '4 min read',
-    image: 'https://images.pexels.com/photos/1105019/pexels-photo-1105019.jpeg?auto=compress&cs=tinysrgb&w=400'
-  }
-];
+
 
 const HomeScreen = ({ navigation }) => {
+  const { width: windowWidth } = useWindowDimensions();
+
+  // Calculate carousel dimensions dynamically
+  const ITEM_WIDTH = windowWidth * 0.82;
+  const ITEM_MARGIN = 8;
+  const SNAP_INTERVAL = ITEM_WIDTH + (ITEM_MARGIN * 2);
+  const SIDE_SPACING = (windowWidth - SNAP_INTERVAL) / 2;
+
   const [user, setUser] = useState(null);
+  const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeSlide, setActiveSlide] = useState(0);
   const [imageErrors, setImageErrors] = useState({});
@@ -98,7 +80,34 @@ const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     fetchUser();
+    fetchLatestBlogs();
   }, []);
+
+  const fetchLatestBlogs = async () => {
+    try {
+      const response = await apiClient.get('/blogs');
+      setBlogs(response.data.data);
+    } catch (error) {
+      console.log('Failed to fetch blogs', error);
+    }
+  };
+
+  // Auto-scroll Timer: 6 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (CAROUSEL_DATA.length > 0) {
+        const nextSlide = (activeSlide + 1) % CAROUSEL_DATA.length;
+        flatListRef.current?.scrollToIndex({
+          index: nextSlide,
+          animated: true
+        });
+        // We don't need to manually call setActiveSlide here 
+        // because the onScroll handler will do it when the scroll completes.
+      }
+    }, 6000);
+
+    return () => clearTimeout(timer);
+  }, [activeSlide]);
 
   const fetchUser = async () => {
     try {
@@ -122,7 +131,7 @@ const HomeScreen = ({ navigation }) => {
     const hasError = imageErrors[item.id];
 
     return (
-      <View style={[styles.carouselItem, { borderColor: item.color }]}>
+      <View style={[styles.carouselItem, { width: ITEM_WIDTH, borderColor: item.color || '#C8E6C9' }]}>
         {!hasError ? (
           <Image
             key={item.id}
@@ -150,43 +159,45 @@ const HomeScreen = ({ navigation }) => {
             item.isSpecial && { justifyContent: 'center', alignItems: 'center', padding: 15 }
           ]}
         >
-          {item.badge && (
-            <View style={styles.specialBadge}>
-              <Ionicons name="leaf" size={12} color="#1B4332" style={{ marginRight: 5 }} />
-              <Text style={styles.specialBadgeText}>{item.badge}</Text>
-            </View>
-          )}
+          <View style={styles.overlayContent}>
+            {item.badge && (
+              <View style={styles.specialBadge}>
+                <Ionicons name="leaf" size={12} color="#1B4332" style={{ marginRight: 5 }} />
+                <Text style={styles.specialBadgeText}>{item.badge}</Text>
+              </View>
+            )}
 
-          {item.highlightTitle ? (
-            <View style={{ alignItems: 'center', marginBottom: 5 }}>
-              <Text style={[styles.carouselTitle, { textAlign: 'center', fontSize: 26, marginBottom: 0, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 }]}>
-                {item.title}
-              </Text>
-              <Text style={[styles.carouselTitle, { color: '#FFB300', textAlign: 'center', fontSize: 32, marginTop: -5, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 }]}>
-                {item.highlightTitle}
-              </Text>
-            </View>
-          ) : (
-            <Text style={[styles.carouselTitle, item.titleColor ? { color: item.titleColor } : {}]}>{item.title}</Text>
-          )}
+            {item.highlightTitle ? (
+              <View style={{ alignItems: 'center', marginBottom: 5 }}>
+                <Text style={[styles.carouselTitle, { textAlign: 'center', fontSize: 26, marginBottom: 0, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 }]}>
+                  {item.title}
+                </Text>
+                <Text style={[styles.carouselTitle, { color: '#FFB300', textAlign: 'center', fontSize: 32, marginTop: -5, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 }]}>
+                  {item.highlightTitle}
+                </Text>
+              </View>
+            ) : (
+              <Text style={styles.carouselTitle}>{item.title}</Text>
+            )}
 
-          <Text style={[styles.carouselDesc, item.isSpecial && { textAlign: 'center', fontSize: 13, color: '#fefefeff', fontWeight: 'bold' }]}>
-            {item.desc}
-          </Text>
+            <Text style={[styles.carouselDesc, item.isSpecial && { textAlign: 'center', fontSize: 13, color: '#ffffff', fontWeight: '700' }]}>
+              {item.desc}
+            </Text>
 
-          {!item.isSpecial && (
-            <TouchableOpacity style={styles.learnMoreBtn}>
-              <Text style={styles.learnMoreText}>Learn More <Ionicons name="arrow-forward" size={14} color="#fff" /></Text>
-            </TouchableOpacity>
-          )}
+            {!item.isSpecial && (
+              <TouchableOpacity style={styles.learnMoreBtn}>
+                <Text style={styles.learnMoreText}>Explore More <Ionicons name="arrow-forward" size={14} color="#fff" /></Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </LinearGradient>
       </View>
     );
   };
 
   const onScroll = (event) => {
-    const slideSize = event.nativeEvent.layoutMeasurement.width;
-    const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+    const scrollOffset = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollOffset / SNAP_INTERVAL);
     if (index !== activeSlide) {
       setActiveSlide(index);
     }
@@ -231,8 +242,8 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.greetingTitle}>{getTimeGreeting()}</Text>
               <Text style={styles.greetingSubtitle}>Welcome to Govi Connect.</Text>
             </View>
-            <TouchableOpacity 
-              style={styles.notificationBtn} 
+            <TouchableOpacity
+              style={styles.notificationBtn}
               onPress={() => navigation.navigate('Notifications')}
             >
               <Ionicons name="notifications-outline" size={28} color="#1B4332" />
@@ -250,12 +261,21 @@ const HomeScreen = ({ navigation }) => {
               renderItem={renderCarouselItem}
               keyExtractor={(item) => item.id}
               horizontal
-              pagingEnabled
               showsHorizontalScrollIndicator={false}
               onScroll={onScroll}
+              scrollEventThrottle={16}
               contentContainerStyle={styles.carouselList}
-              snapToAlignment="center"
+              snapToInterval={SNAP_INTERVAL}
+              snapToAlignment="start"
               decelerationRate="fast"
+              ListHeaderComponent={() => <View style={{ width: SIDE_SPACING }} />}
+              ListFooterComponent={() => <View style={{ width: SIDE_SPACING }} />}
+              onScrollToIndexFailed={(info) => {
+                const wait = new Promise(resolve => setTimeout(resolve, 500));
+                wait.then(() => {
+                  flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                });
+              }}
             />
             <View style={styles.pagination}>
               {CAROUSEL_DATA.map((_, i) => (
@@ -278,30 +298,42 @@ const HomeScreen = ({ navigation }) => {
               <View style={styles.searchBox}>
                 <Ionicons name="search-outline" size={22} color="#888" />
                 <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search blogs, updates, topics..."
-                  placeholderTextColor="#211f1fff"
+                  style={[styles.searchInput, Platform.OS === 'web' && { outlineStyle: 'none' }]}
+                  placeholder="Search blogs"
+                  placeholderTextColor="#444"
                 />
               </View>
               <TouchableOpacity style={styles.filterButton}>
+                <Ionicons name="options-outline" size={20} color="#1B4332" />
                 <Text style={styles.filterLabel}>Filter</Text>
-                <Ionicons name="options-outline" size={22} color="#1e1d1dff" />
               </TouchableOpacity>
             </View>
 
             {/* Latest Blogs */}
             <Text style={styles.sectionHeader}>Latest Blogs</Text>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.blogsList}>
-              {MOCK_BLOGS.map((blog) => (
-                <View key={blog.id} style={styles.blogItem}>
-                  <Image source={{ uri: blog.image }} style={styles.blogThumb} />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.blogsList}
+              contentContainerStyle={styles.blogsScrollContent}
+            >
+              {blogs.map((blog) => (
+                <View key={blog._id} style={styles.blogItem}>
+                  <Image source={{ uri: blog.imageUrl }} style={styles.blogThumb} />
                   <View style={styles.blogDetails}>
                     <Text style={styles.blogTitleText} numberOfLines={2}>{blog.title}</Text>
-                    <Text style={styles.blogMetaText}>By {blog.author} | {blog.readTime}</Text>
+
+                    {/* Dynamic metadata requested by user */}
+                    <Text style={styles.blogMetaText} numberOfLines={1}>
+                      By {blog.expertId?.name || 'Expert'} | {blog.season} • {blog.cropType}
+                    </Text>
 
                     <View style={styles.blogActionRow}>
-                      <TouchableOpacity style={styles.readBtn}>
+                      <TouchableOpacity
+                        style={styles.readBtn}
+                        onPress={() => navigation.navigate('BlogDetail', { blog })}
+                      >
                         <Text style={styles.readBtnText}>Read More</Text>
                       </TouchableOpacity>
                       <View style={styles.iconActions}>
@@ -429,24 +461,21 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   carouselList: {
-    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
   carouselItem: {
-    width: viewportWidth - 20,
-    height: 200,
+    height: 210,
     borderRadius: 25,
     overflow: 'hidden',
     position: 'relative',
-    marginRight: 10,
-    marginLeft: 10,
-    borderWidth: 1.5,
-    backgroundColor: '#e0e0e0', // Placeholder gray while loading
+    marginHorizontal: 8, // Set statically to match ITEM_MARGIN
+    borderWidth: 1,
+    backgroundColor: '#ffffff',
     elevation: 8,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.2,
     shadowRadius: 12,
-    readTime: 10,
   },
   carouselImage: {
     width: '100%',
@@ -457,6 +486,8 @@ const styles = StyleSheet.create({
     flex: 1,
     padding: 25,
     justifyContent: 'flex-end',
+  },
+  overlayContent: {
   },
   carouselTitle: {
     color: '#ffffff',
@@ -486,7 +517,8 @@ const styles = StyleSheet.create({
   learnMoreText: {
     color: '#ffffff',
     fontWeight: 'bold',
-    fontSize: 14
+    fontSize: 14,
+    letterSpacing: 0.5
   },
   specialBadge: {
     backgroundColor: '#FFB300',
@@ -498,10 +530,10 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   specialBadgeText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: 'bold',
     color: '#1B4332',
-    letterSpacing: 0.5,
+    letterSpacing: 1,
   },
   pagination: {
     flexDirection: 'row',
@@ -529,12 +561,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 40,
     paddingTop: 30,
     paddingHorizontal: 20,
-    minHeight: Dimensions.get('window').height * 0.5,
     elevation: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 15,
+    zIndex: 20,
   },
   searchRow: {
     flexDirection: 'row',
@@ -545,61 +577,73 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#dddfddff',
-    borderRadius: 15,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 18,
     paddingHorizontal: 15,
-    marginRight: 10,
+    marginRight: 12,
     height: 54,
     borderWidth: 1.5,
-    borderColor: '#E8F1EB'
+    borderColor: '#C8E6C9',
+    overflow: 'hidden'
   },
   searchInput: {
     flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
     marginLeft: 10,
     fontSize: 15,
-    color: '#000000ff',
-    fontWeight: '500'
+    color: '#1B4332',
+    fontWeight: '600'
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#dddfddff',
-    paddingHorizontal: 15,
-    borderRadius: 15,
+    justifyContent: 'center',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 18,
+    borderRadius: 18,
     height: 54,
     borderWidth: 1.5,
-    borderColor: '#919592ff'
+    borderColor: '#C8E6C9'
   },
   filterLabel: {
-    fontWeight: '700',
-    color: '#000000ff',
-    marginRight: 8,
-    fontSize: 15
+    fontWeight: '800',
+    color: '#1B4332',
+    marginLeft: 6,
+    fontSize: 14,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
 
   sectionHeader: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#18593eff',
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1B4332',
     marginBottom: 20,
-    letterSpacing: -0.5
+    letterSpacing: -0.5,
+    paddingLeft: 5
   },
   blogsList: {
     marginBottom: 15,
   },
+  blogsScrollContent: {
+    paddingLeft: 5,
+    paddingRight: 20,
+    paddingBottom: 15
+  },
   blogItem: {
-    width: 260,
+    width: 280,
     backgroundColor: '#ffffff',
-    borderRadius: 22,
-    marginRight: 18,
+    borderRadius: 25,
+    marginRight: 15,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: '#E8F5E9',
     overflow: 'hidden',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+    shadowColor: '#1B4332',
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowRadius: 10,
   },
   blogThumb: {
     width: '100%',
