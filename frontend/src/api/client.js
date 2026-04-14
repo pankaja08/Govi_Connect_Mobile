@@ -5,8 +5,8 @@ import { Platform } from 'react-native';
 // Update this with your actual local IP address for physical device testing
 // On Web, localhost is generally safer for CORS and internal routing
 const BASE_URL = Platform.OS === 'web' 
-  ? 'http://localhost:5000/api'
-  : 'http://192.168.1.4:5000/api'; 
+  ? 'http://localhost:5001/api'
+  : 'http://172.28.0.111:5001/api'; 
 
 const apiClient = axios.create({
   baseURL: BASE_URL,

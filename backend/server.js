@@ -12,6 +12,7 @@ dns.setDefaultResultOrder('ipv4first');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const activityRoutes = require('./routes/activityRoutes');
+const cropRoutes = require('./routes/cropRoutes');
 
 const app = express();
 
@@ -19,10 +20,23 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Request logger to debug login/register issues
+app.use((req, res, next) => {
+  console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
+  if (req.body && Object.keys(req.body).length > 0) {
+    const safeBody = { ...req.body };
+    if (safeBody.password) safeBody.password = '******';
+    console.log('Body:', JSON.stringify(safeBody, null, 2));
+  }
+  next();
+});
+
+
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/farm/crops', cropRoutes);
 
 // Database connection
 const DB = process.env.MONGODB_URI || 'mongodb://localhost:27017/gosconnect';

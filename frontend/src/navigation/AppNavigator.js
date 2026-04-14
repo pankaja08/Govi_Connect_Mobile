@@ -20,6 +20,7 @@ import CropAdvisoryScreen from '../screens/CropAdvisoryScreen';
 import ExpertDashboardScreen from '../screens/ExpertDashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
+import FarmerTrackerScreen from '../screens/FarmerTrackerScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -165,7 +166,7 @@ const MainTabNavigator = () => {
       <Tab.Screen name="GoviMart" component={GoviMartScreen} options={{ title: 'Govi Mart' }} />
       <Tab.Screen name="Forum" component={ForumScreen} options={{ title: 'Community Forum' }} />
       <Tab.Screen name="CropAdvisory" component={CropAdvisoryScreen} options={{ title: 'Crop Advisory' }} />
-      <Tab.Screen name="FarmerTracker" component={ActivityScreen} options={{ title: 'Tasks' }} />
+      <Tab.Screen name="FarmerTracker" component={FarmerTrackerScreen} options={{ title: 'Tasks' }} />
     </Tab.Navigator>
   );
 };
