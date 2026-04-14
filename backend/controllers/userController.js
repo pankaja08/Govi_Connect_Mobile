@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const bcrypt = require('bcrypt');
 
 exports.getMe = async (req, res) => {
   try {
@@ -75,6 +76,10 @@ exports.createUserByAdmin = async (req, res) => {
 
 exports.updateUserByAdmin = async (req, res) => {
   try {
+    if (req.body.password) {
+      req.body.password = await bcrypt.hash(req.body.password, 12);
+    }
+
     const updatedUser = await User.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
       runValidators: true
