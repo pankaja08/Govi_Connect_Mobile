@@ -27,7 +27,7 @@ const CAROUSEL_DATA = [
     title: 'Sri Lanka First all in one Agriculture Platform',
     articleCount: '34 articles',
     readCount: '1720 reads',
-    image: 'https://images.pexels.com/photos/422218/pexels-photo-422218.jpeg?auto=compress&cs=tinysrgb&w=800',
+    image: 'https://images.pexels.com/photos/2886937/pexels-photo-2886937.jpeg?auto=compress&cs=tinysrgb&w=1000',
     color: '#166142'
   },
   {
@@ -36,7 +36,7 @@ const CAROUSEL_DATA = [
     title: 'Boost Your Harvest with Modern Tips',
     articleCount: '12 articles',
     readCount: '950 reads',
-    image: 'https://images.pexels.com/photos/2132250/pexels-photo-2132250.jpeg?auto=compress&cs=tinysrgb&w=800',
+    image: 'https://images.pexels.com/photos/2132250/pexels-photo-2132250.jpeg?auto=compress&cs=tinysrgb&w=1000',
     color: '#FF9800'
   },
   {
@@ -45,7 +45,7 @@ const CAROUSEL_DATA = [
     title: 'Govi Mart: Sell Direct to Buyers',
     articleCount: '8 articles',
     readCount: '2100 reads',
-    image: 'https://images.pexels.com/photos/2255924/pexels-photo-2255924.jpeg?auto=compress&cs=tinysrgb&w=800',
+    image: 'https://images.pexels.com/photos/2255924/pexels-photo-2255924.jpeg?auto=compress&cs=tinysrgb&w=1000',
     color: '#4CAF50'
   },
   {
@@ -54,8 +54,26 @@ const CAROUSEL_DATA = [
     title: 'Expert Advice for Every Farmer',
     articleCount: '25 articles',
     readCount: '1420 reads',
-    image: 'https://images.pexels.com/photos/4505166/pexels-photo-4505166.jpeg?auto=compress&cs=tinysrgb&w=800',
+    image: 'https://images.pexels.com/photos/4505166/pexels-photo-4505166.jpeg?auto=compress&cs=tinysrgb&w=1000',
     color: '#2196F3'
+  },
+  {
+    id: '4',
+    badge: 'Smart Assistant',
+    title: 'Get your Personalized Crop suggestions',
+    articleCount: 'Smart Tips',
+    readCount: 'Real-time',
+    image: 'https://images.pexels.com/photos/706140/pexels-photo-706140.jpeg?auto=compress&cs=tinysrgb&w=1000',
+    color: '#8BC34A'
+  },
+  {
+    id: '5',
+    badge: 'Management',
+    title: 'Track Your Farm Activities efficiently',
+    articleCount: 'Daily Logs',
+    readCount: 'Tracker',
+    image: 'https://images.pexels.com/photos/259280/pexels-photo-259280.jpeg?auto=compress&cs=tinysrgb&w=1000',
+    color: '#FF7043'
   }
 ];
 
@@ -263,10 +281,10 @@ const HomeScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       <LinearGradient
-        colors={['#2ed598ff', '#d2f39eff', '#c4f48cff']}
+        colors={['#15bf80ff', '#d2f39eff', '#b6f56fff']}
         style={styles.gradientBg}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -377,25 +395,42 @@ const HomeScreen = ({ navigation }) => {
             >
               {blogs.map((blog) => (
                 <View key={blog._id} style={styles.blogItem}>
-                  <Image source={{ uri: blog.imageUrl }} style={styles.blogThumb} />
+                  {/* Image Container with Floating Badge */}
+                  <View style={styles.imageWrapper}>
+                    <Image source={{ uri: blog.imageUrl }} style={styles.blogThumb} />
+                    <View style={styles.imageBadge}>
+                      <Text style={styles.imageBadgeText}>{blog.cropType}</Text>
+                    </View>
+                  </View>
+
                   <View style={styles.blogDetails}>
                     <Text style={styles.blogTitleText} numberOfLines={2}>{blog.title}</Text>
 
-                    {/* Dynamic metadata requested by user */}
-                    <Text style={styles.blogMetaText} numberOfLines={1}>
-                      By {blog.expertId?.name || 'Expert'} | {blog.season} • {blog.cropType}
-                    </Text>
+                    {/* New Author Row with Avatar */}
+                    <View style={styles.authorRow}>
+
+                      <Text style={styles.blogMetaText} numberOfLines={1}>
+                        {blog.expertId?.name || 'Agri Expert'} • {blog.season}
+                      </Text>
+                    </View>
 
                     <View style={styles.blogActionRow}>
+                      {/* Modernized Read Button */}
                       <TouchableOpacity
                         style={styles.readBtn}
                         onPress={() => navigation.navigate('BlogDetail', { blog })}
                       >
-                        <Text style={styles.readBtnText}>Read More</Text>
+                        <Text style={styles.readBtnText}>Read Article</Text>
+                        <Ionicons name="arrow-forward" size={16} color="#187a38" style={{ marginLeft: 4 }} />
                       </TouchableOpacity>
+
                       <View style={styles.iconActions}>
-                        <TouchableOpacity style={styles.iconSBtn}><Ionicons name="bookmark-outline" size={22} color="#333" /></TouchableOpacity>
-                        <TouchableOpacity style={styles.iconSBtn}><Ionicons name="share-social-outline" size={22} color="#333" /></TouchableOpacity>
+                        <TouchableOpacity style={styles.iconSBtn}>
+                          <Ionicons name="bookmark-outline" size={22} color="#555" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.iconSBtn}>
+                          <Ionicons name="share-social-outline" size={22} color="#555" />
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </View>
@@ -456,7 +491,7 @@ const HomeScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: '#15bf80ff' },
   gradientBg: { flex: 1 },
   centered: { flex: 2, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { flexGrow: 1, paddingTop: Platform.OS === 'android' ? 40 : 10 },
@@ -612,14 +647,17 @@ const styles = StyleSheet.create({
   carouselList: {
     paddingVertical: 10,
   },
+
   carouselItem: {
-    height: 230,
-    borderRadius: 35,
+    height: 190,
+    borderRadius: 25,
     overflow: 'hidden',
     position: 'relative',
-    marginHorizontal: 8,
+    width: '100%',
+    alignItems: 'center',
+    marginHorizontal: 12,
     backgroundColor: '#ffffff',
-    elevation: 10,
+    elevation: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
@@ -773,58 +811,93 @@ const styles = StyleSheet.create({
   blogItem: {
     width: 280,
     backgroundColor: '#ffffff',
-    borderRadius: 25,
-    marginRight: 15,
+    borderRadius: 24,
+    marginRight: 16,
     borderWidth: 1,
-    borderColor: '#E8F5E9',
+    borderColor: '#F0F0F0',
     overflow: 'hidden',
-    elevation: 6,
-    shadowColor: '#1B4332',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+  },
+  imageWrapper: {
+    position: 'relative',
   },
   blogThumb: {
     width: '100%',
-    height: 150,
+    height: 160, // Slightly taller for a better aspect ratio
+  },
+  imageBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  imageBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#187a38',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   blogDetails: {
     padding: 16,
+    paddingTop: 12,
   },
   blogTitleText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '800',
-    color: '#222',
-    marginBottom: 8,
+    color: '#1A1A1A',
+    marginBottom: 10,
     lineHeight: 24,
   },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  authorAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+    backgroundColor: '#E8F5E9',
+  },
   blogMetaText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
-    marginBottom: 15,
-    fontWeight: '500'
+    //marginBottom: 15,
+    fontWeight: '600',
+    flex: 1,
   },
   blogActionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F5F5', // Subtle divider line
   },
   readBtn: {
-    backgroundColor: '#EEEEEE',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
   },
   readBtnText: {
-    color: '#333',
+    color: '#187a38',
     fontWeight: '800',
-    fontSize: 12
+    fontSize: 14,
   },
   iconActions: {
     flexDirection: 'row',
   },
   iconSBtn: {
-    marginLeft: 12,
+    marginLeft: 16,
   },
   modalOverlay: {
     flex: 1,

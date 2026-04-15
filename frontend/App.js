@@ -5,8 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import AppNavigator from './src/navigation/AppNavigator';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
-// --- AUTH CONTEXT ---
-export const AuthContext = createContext();
+import { AuthContext } from './src/context/AuthContext';
 
 export default function App() {
   const [userToken, setUserToken] = useState(null);
