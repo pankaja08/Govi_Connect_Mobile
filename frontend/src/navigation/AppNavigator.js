@@ -20,6 +20,8 @@ import CropAdvisoryScreen from '../screens/CropAdvisoryScreen';
 import ExpertDashboardScreen from '../screens/ExpertDashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
+import ProductDetailScreen from '../screens/ProductDetailScreen';
+import AddProductScreen from '../screens/AddProductScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -345,6 +347,16 @@ const AppNavigator = ({ userToken, userRole }) => {
                 headerStyle: { backgroundColor: '#2E7D32' },
                 headerTintColor: '#fff'
               }} 
+            />
+            <Stack.Screen
+              name="ProductDetail"
+              component={ProductDetailScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="AddProduct"
+              component={AddProductScreen}
+              options={{ headerShown: false }}
             />
           </>
         )}

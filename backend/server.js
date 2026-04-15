@@ -12,6 +12,7 @@ dns.setDefaultResultOrder('ipv4first');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const activityRoutes = require('./routes/activityRoutes');
+const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
@@ -23,6 +24,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/products', productRoutes);
 
 // Database connection
 const DB = process.env.MONGODB_URI || 'mongodb://localhost:27017/gosconnect';
@@ -52,7 +54,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5002;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}...`);
 });

@@ -1,2 +1,8 @@
 node_modules/
+*.log
+backend.log
+frontend.log
+backend_log.txt
+bundling_log*.txt
 .env
+.DS_Store

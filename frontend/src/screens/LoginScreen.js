@@ -14,6 +14,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
 import { AuthContext } from '../../App';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LoginScreen = ({ navigation }) => {
   const { signIn, continueAsGuest } = React.useContext(AuthContext);
@@ -36,6 +37,8 @@ const LoginScreen = ({ navigation }) => {
       const response = await apiClient.post('/auth/login', { username, password });
       const { token, data } = response.data;
       const role = data?.user?.role || 'User';
+      const userId = data?.user?.id || '';
+      await AsyncStorage.setItem('userId', userId);
       await signIn(token, role);
     } catch (error) {
       setLoading(false);
