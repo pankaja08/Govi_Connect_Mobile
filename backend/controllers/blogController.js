@@ -62,10 +62,23 @@ exports.getMyBlogs = async (req, res) => {
 // Get all blogs (Public feed)
 exports.getAllBlogs = async (req, res) => {
   try {
-    const blogs = await Blog.find()
+    const { cropType, farmingMethod, season, location, sortBy } = req.query;
+
+    const filter = {};
+    if (cropType) filter.cropType = cropType;
+    if (farmingMethod) filter.farmingMethod = farmingMethod;
+    if (season) filter.season = season;
+    if (location) filter.location = location;
+
+    let sortObj = { createdAt: -1 };
+    if (sortBy === 'old') {
+      sortObj = { createdAt: 1 };
+    }
+
+    const blogs = await Blog.find(filter)
       .populate('expertId', 'name')
-      .sort({ createdAt: -1 });
-      
+      .sort(sortObj);
+
     res.status(200).json({
       success: true,
       count: blogs.length,
@@ -119,7 +132,7 @@ exports.deleteBlog = async (req, res) => {
     }
 
     await blog.deleteOne();
-    
+
     res.status(200).json({ success: true, data: {} });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server Error' });
