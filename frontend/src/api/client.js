@@ -1,12 +1,16 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import Constants from 'expo-constants';
 
-// Update this with your actual local IP address for physical device testing
-// On Web, localhost is generally safer for CORS and internal routing
+// Extract the IP address of the machine running Metro
+// On physical devices, hostUri will contain the machine's IP (e.g., '192.168.1.5:8081')
+const debuggerHost = Constants.expoConfig?.hostUri;
+const localhost = debuggerHost?.split(':')[0] || 'localhost';
+
 const BASE_URL = Platform.OS === 'web' 
   ? 'http://localhost:5001/api'
-  : 'http://172.28.0.111:5001/api'; 
+  : `http://${localhost}:5001/api`;
 
 const apiClient = axios.create({
   baseURL: BASE_URL,

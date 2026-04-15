@@ -228,7 +228,7 @@ const FarmerTrackerScreen = () => {
             {/* Analytics Card */}
             <View style={styles.analyticsCard}>
               <View style={styles.analyticsHeader}>
-                <View>
+                <View style={{ flex: 1, paddingRight: 12 }}>
                   <Text style={styles.analyticsTitle}>Season Performance Analysis</Text>
                   <Text style={styles.analyticsSub}>View detailed yields and income by agricultural season</Text>
                 </View>
@@ -236,6 +236,7 @@ const FarmerTrackerScreen = () => {
                   <Picker
                     selectedValue={selectedSeason}
                     style={styles.pickerSmall}
+                    itemStyle={{ fontSize: 14, height: 55 }}
                     onValueChange={(itemValue) => setSelectedSeason(itemValue)}
                   >
                     <Picker.Item label="Yala" value="Yala" />
@@ -462,19 +463,24 @@ const styles = StyleSheet.create({
   analyticsHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 16,
   },
   analyticsTitle: { fontSize: 16, fontWeight: 'bold', color: '#111827' },
-  analyticsSub: { fontSize: 12, color: '#6B7280', flex: 1, marginTop: 4 },
+  analyticsSub: { fontSize: 12, color: '#6B7280', marginTop: 4 },
   pickerContainerSmall: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
     borderRadius: 8,
-    width: 120,
+    width: 160,
     justifyContent: 'center',
-    marginLeft: 10
+    backgroundColor: '#F9FAFB',
+    height: 55,
   },
-  pickerSmall: { height: 40 },
+  pickerSmall: { 
+    height: 55,
+    fontSize: 14,
+  },
   analyticsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
