@@ -76,12 +76,24 @@ const AdminUsersScreen = ({ navigation }) => {
       const payload = { ...formData };
       delete payload.confirmPassword; // Don't send this to backend
 
+      if (isEditMode && !payload.password) {
+        delete payload.password;
+      }
+
       if (isEditMode) {
         await apiClient.put(`/users/admin/update/${selectedUser._id}`, payload);
-        Alert.alert('Success', 'User updated successfully');
+        if (Platform.OS === 'web') {
+           window.alert('User updated successfully');
+        } else {
+           Alert.alert('Success', 'User updated successfully');
+        }
       } else {
         await apiClient.post('/users/admin/create', payload);
-        Alert.alert('Success', 'User created successfully');
+        if (Platform.OS === 'web') {
+           window.alert('User created successfully');
+        } else {
+           Alert.alert('Success', 'User created successfully');
+        }
       }
 
       setModalVisible(false);
@@ -92,26 +104,39 @@ const AdminUsersScreen = ({ navigation }) => {
     }
   };
 
+  const executeDelete = async (userId) => {
+    try {
+      await apiClient.delete(`/users/admin/delete/${userId}`);
+      fetchUsers();
+    } catch (error) {
+      const errorMsg = error.response?.data?.message || 'Failed to delete user';
+      if (Platform.OS === 'web') {
+         window.alert('Error: ' + errorMsg);
+      } else {
+         Alert.alert('Error', errorMsg);
+      }
+    }
+  };
+
   const handleDeleteUser = (userId, userName) => {
-    Alert.alert(
-      'Delete User',
-      `Are you sure you want to delete ${userName}? This action cannot be undone.`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await apiClient.delete(`/users/admin/delete/${userId}`);
-              fetchUsers();
-            } catch (error) {
-              Alert.alert('Error', error.response?.data?.message || 'Failed to delete user');
-            }
+    if (Platform.OS === 'web') {
+      if (window.confirm(`Are you sure you want to delete ${userName}? This action cannot be undone.`)) {
+        executeDelete(userId);
+      }
+    } else {
+      Alert.alert(
+        'Delete User',
+        `Are you sure you want to delete ${userName}? This action cannot be undone.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: () => executeDelete(userId)
           }
-        }
-      ]
-    );
+        ]
+      );
+    }
   };
 
   const openEditModal = (user) => {
