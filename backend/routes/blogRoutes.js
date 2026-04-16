@@ -3,8 +3,8 @@ const router = express.Router();
 const { createBlog, getMyBlogs, getAllBlogs, updateBlog, deleteBlog } = require('../controllers/blogController');
 const { protect } = require('../middleware/auth');
 
-// Route to get all blogs
-router.get('/', protect, getAllBlogs);
+// Route to get all blogs (Publicly available)
+router.get('/', getAllBlogs);
 
 // Route to create a new blog
 // Requires the user to be authenticated

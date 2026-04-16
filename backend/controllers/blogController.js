@@ -7,7 +7,7 @@ exports.createBlog = async (req, res) => {
 
     // Check placeholders validation from backend as well
     if (
-      location === 'Any/Select' || location === 'All Island' || location === '' ||
+      location === 'Any/Select' || location === '' ||
       season === 'Any Season' || season === '' ||
       cropType === 'Any Crop' || cropType === '' ||
       farmingMethod === 'Any Method' || farmingMethod === ''

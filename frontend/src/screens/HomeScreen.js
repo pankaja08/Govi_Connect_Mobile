@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
   View,
   Text,
@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import apiClient from '../api/client';
+import { AuthContext } from '../context/AuthContext';
 
 const CAROUSEL_DATA = [
   {
@@ -80,15 +81,17 @@ const CAROUSEL_DATA = [
 
 
 const FILTER_OPTIONS = {
-  cropType: ['All', 'Paddy', 'Vegetable', 'Fruit', 'Grains'],
-  farmingType: ['All', 'Organic', 'Conventional', 'Hydroponics'],
-  season: ['All', 'Maha', 'Yala'],
-  location: ['All', 'Dry Zone', 'Wet Zone', 'Intermediate Zone'],
+  cropType: ['All', 'Paddy', 'Vegetables', 'Fruits', 'Export Crops', "Plantation Crop"],
+  farmingType: ['All', 'Organic', 'Conventional', 'Hydroponics', 'Integrated/Avenue Planting'],
+  season: ['All', 'Maha Season', 'Yala Season', 'Rainy Season'],
+  location: ['All', 'All Island', 'Western', 'Central', 'Southern', 'Northern', 'Eastern'],
   sortBy: ['Newly Uploaded', 'Earlier Uploaded']
 };
 
 const HomeScreen = ({ navigation }) => {
   const { width: windowWidth } = useWindowDimensions();
+  const { userRole, signOut } = useContext(AuthContext);
+  const [isLoginPromptVisible, setIsLoginPromptVisible] = useState(false);
 
   // Calculate carousel dimensions dynamically
   const ITEM_WIDTH = windowWidth * 0.90;
@@ -298,7 +301,13 @@ const HomeScreen = ({ navigation }) => {
               {/* Notification Bell */}
               <TouchableOpacity
                 style={styles.iconCircleBtn}
-                onPress={() => navigation.navigate('Notifications')}
+                onPress={() => {
+                  if (userRole === 'Guest') {
+                    setIsLoginPromptVisible(true);
+                  } else {
+                    navigation.navigate('Notifications');
+                  }
+                }}
               >
                 <Ionicons name="notifications-outline" size={24} color="#1B4332" />
                 <View style={styles.headerBadge}>
@@ -309,7 +318,13 @@ const HomeScreen = ({ navigation }) => {
               {/* NEW Profile Icon */}
               <TouchableOpacity
                 style={styles.iconCircleBtn}
-                onPress={() => navigation.navigate('Profile')}
+                onPress={() => {
+                  if (userRole === 'Guest') {
+                    setIsLoginPromptVisible(true);
+                  } else {
+                    navigation.navigate('Profile');
+                  }
+                }}
               >
                 <Ionicons name="person-outline" size={24} color="#1B4332" />
               </TouchableOpacity>
@@ -484,6 +499,52 @@ const HomeScreen = ({ navigation }) => {
               </TouchableOpacity>
             </View>
           </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* Login Prompt Modal for Guests */}
+      <Modal
+        visible={isLoginPromptVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsLoginPromptVisible(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay} 
+          activeOpacity={1} 
+          onPress={() => setIsLoginPromptVisible(false)}
+        >
+          <View style={styles.promptModalContainer}>
+            <LinearGradient
+              colors={['#1B4332', '#2E7D32']}
+              style={styles.promptGradient}
+            >
+              <View style={styles.promptIconContainer}>
+                <Ionicons name="lock-closed" size={50} color="#ffffff" />
+              </View>
+              <Text style={styles.promptTitle}>Unlock the Full Experience!</Text>
+              <Text style={styles.promptSubtitle}>
+                Join Govi Connect today to access personalized features, community discussions, and expert insights.
+              </Text>
+              
+              <TouchableOpacity 
+                style={[styles.promptLoginBtn, {marginBottom: 12 }]} 
+                onPress={async () => {
+                  setIsLoginPromptVisible(false);
+                  await signOut();
+                }}
+              >
+                <Text style={styles.promptLoginBtnText}>Login / Register Now</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.promptLaterBtn} 
+                onPress={() => setIsLoginPromptVisible(false)}
+              >
+                <Text style={styles.promptLaterBtnText}>Maybe Later</Text>
+              </TouchableOpacity>
+            </LinearGradient>
+          </View>
         </TouchableOpacity>
       </Modal>
     </SafeAreaView>
@@ -994,6 +1055,68 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#ffffff'
+  },
+  promptModalContainer: {
+    width: '85%',
+    borderRadius: 30,
+    overflow: 'hidden',
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+  },
+  promptGradient: {
+    padding: 30,
+    alignItems: 'center',
+  },
+  promptIconContainer: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  promptTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  promptSubtitle: {
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 30,
+  },
+  promptLoginBtn: {
+    width: '100%',
+    backgroundColor: '#ffffff',
+    paddingVertical: 16,
+    borderRadius: 15,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  promptLoginBtnText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1B4332',
+  },
+  promptLaterBtn: {
+    paddingVertical: 10,
+  },
+  promptLaterBtnText: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
   }
 });
 
