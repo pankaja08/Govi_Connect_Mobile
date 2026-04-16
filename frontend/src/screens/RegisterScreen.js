@@ -111,6 +111,7 @@ const RegisterScreen = ({ navigation }) => {
     password: '',
     confirmPassword: '',
     expertRegNo: '',
+    areaOfExpertise: '',
     jobPosition: '',
     assignedArea: ''
   });
@@ -124,7 +125,7 @@ const RegisterScreen = ({ navigation }) => {
     // Required fields check
     const requiredFields = ['name', 'nic', 'email', 'contactInfo', 'dob', 'address', 'province', 'district', 'username', 'password', 'confirmPassword'];
     if (isExpert) {
-      requiredFields.push('expertRegNo', 'jobPosition', 'assignedArea');
+      requiredFields.push('expertRegNo', 'areaOfExpertise', 'jobPosition', 'assignedArea');
     }
 
     requiredFields.forEach(field => {
@@ -159,8 +160,10 @@ const RegisterScreen = ({ navigation }) => {
       }
     }
 
-    // Password Match
-    if (formData.password !== formData.confirmPassword) {
+    // Password Match and Length
+    if (formData.password && formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters long';
+    } else if (formData.password !== formData.confirmPassword) {
       newErrors.confirmPassword = 'Passwords do not match';
     }
 
@@ -265,9 +268,10 @@ const RegisterScreen = ({ navigation }) => {
           </View>
 
           {isExpert && (
-            <View style={[styles.section, styles.expertSection]}>
-              <Text style={[styles.sectionTitle, { color: '#2E7D32' }]}>Expert Credentials</Text>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Expert Credentials</Text>
               <FormInput label="Registration Number" icon="ribbon-outline" value={formData.expertRegNo} onChangeText={(t) => updateField('expertRegNo', t)} placeholder="Official Reg No." error={errors.expertRegNo} />
+              <FormInput label="Area of Expertise" icon="flask-outline" value={formData.areaOfExpertise} onChangeText={(t) => updateField('areaOfExpertise', t)} placeholder="e.g. Plant Pathology" error={errors.areaOfExpertise} />
               <FormInput label="Job Position" icon="briefcase-outline" value={formData.jobPosition} onChangeText={(t) => updateField('jobPosition', t)} placeholder="e.g. Agronomist" error={errors.jobPosition} />
               <FormInput label="Assigned Area" icon="map-outline" value={formData.assignedArea} onChangeText={(t) => updateField('assignedArea', t)} placeholder="Covered region" error={errors.assignedArea} />
             </View>

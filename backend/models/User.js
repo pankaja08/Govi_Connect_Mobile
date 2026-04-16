@@ -39,10 +39,19 @@ const userSchema = new mongoose.Schema({
   contactInfo: { type: String, default: '' },
   location: { type: String, default: '' }, // Legacy field, keeping for compatibility
   
+  // Status for expert verification
+  status: {
+    type: String,
+    enum: ['Pending', 'Active', 'Rejected'],
+    default: 'Active'
+  },
+  
   // Expert specific fields
   expertRegNo: { type: String, default: '' },
+  areaOfExpertise: { type: String, default: '' },
   jobPosition: { type: String, default: '' },
-  assignedArea: { type: String, default: '' }
+  assignedArea: { type: String, default: '' },
+  rejectionReason: { type: String, default: '' }
 }, { timestamps: true });
 
 // Hash password before saving
