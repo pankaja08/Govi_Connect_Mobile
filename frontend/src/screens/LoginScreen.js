@@ -8,12 +8,12 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
-import { AuthContext } from '../../App';
+import { AuthContext } from '../context/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
   const { signIn, continueAsGuest } = React.useContext(AuthContext);

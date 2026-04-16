@@ -6,7 +6,7 @@ import { createDrawerNavigator, DrawerContentScrollView, DrawerItemList, DrawerI
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
-import { AuthContext } from '../../App';
+import { AuthContext } from '../context/AuthContext';
 
 import GetStartedScreen from '../screens/GetStartedScreen';
 import LoginScreen from '../screens/LoginScreen';
@@ -19,8 +19,10 @@ import ForumScreen from '../screens/ForumScreen';
 import CropAdvisoryScreen from '../screens/CropAdvisoryScreen';
 import ExpertDashboardScreen from '../screens/ExpertDashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import ExpertPastBlogsScreen from '../screens/ExpertPastBlogsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import AdminUsersScreen from '../screens/AdminUsersScreen';
+import BlogDetailScreen from '../screens/BlogDetailScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -159,13 +161,15 @@ const MainTabNavigator = () => {
         },
         tabBarActiveTintColor: '#2E7D32',
         tabBarInactiveTintColor: 'gray',
+        tabBarLabelStyle: { fontSize: 11, fontWeight: '700', marginBottom: 5 },
+        tabBarStyle: { height: 65, paddingBottom: 5, backgroundColor: '#ffffff', borderTopWidth: 1, borderTopColor: '#f0f0f0' },
         headerShown: false, // Hide headers for individual tabs as they'll have their own or use the drawer header
       })}
     >
       <Tab.Screen name="HomeTab" component={HomeScreen} options={{ title: 'Home' }} />
-      <Tab.Screen name="GoviMart" component={GoviMartScreen} options={{ title: 'Govi Mart' }} />
-      <Tab.Screen name="Forum" component={ForumScreen} options={{ title: 'Community Forum' }} />
-      <Tab.Screen name="CropAdvisory" component={CropAdvisoryScreen} options={{ title: 'Crop Advisory' }} />
+      <Tab.Screen name="GoviMart" component={GoviMartScreen} options={{ title: 'Mart' }} />
+      <Tab.Screen name="Forum" component={ForumScreen} options={{ title: 'Forum' }} />
+      <Tab.Screen name="CropAdvisory" component={CropAdvisoryScreen} options={{ title: 'Advisory' }} />
       <Tab.Screen name="FarmerTracker" component={ActivityScreen} options={{ title: 'Tasks' }} />
     </Tab.Navigator>
   );
@@ -195,7 +199,7 @@ const ExpertDrawer = () => {
       />
       <Drawer.Screen 
         name="MyBlogs" 
-        component={ActivityScreen} 
+        component={ExpertPastBlogsScreen} 
         options={{ 
           title: 'View Past Blogs',
           drawerIcon: ({color}) => <Ionicons name="document-text-outline" size={22} color={color} />,
@@ -330,11 +334,13 @@ const AppNavigator = ({ userToken, userRole }) => {
           // EXPERT APP STACK
           <>
             <Stack.Screen name="ExpertMain" component={ExpertDrawer} />
+            <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
           </>
         ) : (
           // MAIN APP STACK (User Drawer + Sub-screens)
           <>
             <Stack.Screen name="Main" component={MainDrawer} />
+            <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
             <Stack.Screen 
               name="Activities" 
               component={ActivityScreen} 

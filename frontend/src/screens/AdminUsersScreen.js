@@ -196,7 +196,7 @@ const AdminUsersScreen = ({ navigation }) => {
               {/* Header */}
               <View style={[styles.tableHeader, { backgroundColor: roleType === 'Admin' ? '#FFF1F1' : roleType === 'Expert' ? '#EFF6FF' : '#F9FAFB' }]}>
                 <Text style={styles.columnHeaderName}>NAME</Text>
-                <Text style={styles.columnHeader}>EMAIL</Text>
+                <Text style={styles.columnHeaderEmail}>EMAIL</Text>
                 <Text style={styles.columnHeader}>CONTACT</Text>
                 <Text style={styles.columnHeader}>DISTRICT</Text>
                 <Text style={styles.columnHeader}>STATUS</Text>
@@ -208,15 +208,12 @@ const AdminUsersScreen = ({ navigation }) => {
               filteredUsers.map((user, index) => (
                 <View key={user._id} style={[styles.tableRow, index === filteredUsers.length - 1 && styles.lastRow]}>
                   <View style={styles.nameCell}>
-                    <View style={[styles.avatarCircle, { backgroundColor: color + '20' }]}>
-                      <Text style={[styles.avatarText, { color }]}>{user.name.charAt(0)}</Text>
-                    </View>
                     <View>
                       <Text style={styles.userNameText}>{user.name}</Text>
                       <Text style={styles.userSubText}>{user.username}</Text>
                     </View>
                   </View>
-                  <Text style={styles.cellText}>{user.email}</Text>
+                  <Text style={styles.emailCell} numberOfLines={1} ellipsizeMode="tail">{user.email}</Text>
                   <Text style={styles.cellText}>{user.contactInfo || 'N/A'}</Text>
                   <Text style={styles.cellText}>{user.district || 'N/A'}</Text>
                   <View style={styles.statusCell}>
@@ -607,7 +604,7 @@ const styles = StyleSheet.create({
     shadowRadius: 10,
   },
   tableInner: {
-    minWidth: 850, // Ensures table has width to scroll horizontally
+    minWidth: 920, // Increased to accommodate wider email column
   },
   tableHeader: {
     flexDirection: 'row',
@@ -658,18 +655,7 @@ const styles = StyleSheet.create({
     width: 180, // Match header
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  avatarCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  avatarText: {
-    fontSize: 12,
-    fontWeight: 'bold',
+    paddingLeft: 5,
   },
   userNameText: {
     fontSize: 13,
@@ -684,6 +670,22 @@ const styles = StyleSheet.create({
     width: 140, // Match header
     fontSize: 12,
     color: '#475569',
+    textAlign: 'left',
+    paddingHorizontal: 5,
+  },
+  emailCell: {
+    width: 210, // Wider for email to stay on one line
+    fontSize: 12,
+    color: '#475569',
+    textAlign: 'left',
+    paddingHorizontal: 5,
+  },
+  columnHeaderEmail: {
+    width: 210, // Matching emailCell
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#64748B',
+    letterSpacing: 0.5,
     textAlign: 'left',
     paddingHorizontal: 5,
   },

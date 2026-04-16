@@ -8,12 +8,12 @@ import {
   Alert,
   ScrollView,
   Switch,
-  SafeAreaView,
   KeyboardAvoidingView,
   Platform,
   Modal,
   FlatList
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
 
