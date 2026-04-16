@@ -21,7 +21,11 @@ import ExpertDashboardScreen from '../screens/ExpertDashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ExpertPastBlogsScreen from '../screens/ExpertPastBlogsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
+import AdminUsersScreen from '../screens/AdminUsersScreen';
 import BlogDetailScreen from '../screens/BlogDetailScreen';
+import AdminExpertRequestsScreen from '../screens/AdminExpertRequestsScreen';
+import ExpertRegistrationPendingScreen from '../screens/ExpertRegistrationPendingScreen';
+import ExpertResubmitScreen from '../screens/ExpertResubmitScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -269,18 +273,16 @@ const AdminDrawer = () => {
       />
       <Drawer.Screen 
         name="AdminUsers" 
-        component={ActivityScreen} 
+        component={AdminUsersScreen} 
         options={{ 
           title: 'Users & Experts',
           drawerIcon: ({color}) => <Ionicons name="people-outline" size={22} color={color} />,
-          headerShown: true,
-          headerStyle: { backgroundColor: '#115C39' },
-          headerTintColor: '#fff'
+          headerShown: false
         }} 
       />
       <Drawer.Screen 
         name="AdminExpertRequests" 
-        component={ActivityScreen} 
+        component={AdminExpertRequestsScreen} 
         options={{ 
           title: 'Expert Requests',
           drawerIcon: ({color}) => <Ionicons name="shield-checkmark-outline" size={22} color={color} />,
@@ -315,7 +317,7 @@ const AdminDrawer = () => {
 
 
 // --- APP NAVIGATOR ENTRY POINT ---
-const AppNavigator = ({ userToken, userRole }) => {
+const AppNavigator = ({ userToken, userRole, userStatus }) => {
   return (
     <NavigationContainer>
       <Stack.Navigator screenOptions={{ headerShown: false }}>
@@ -333,10 +335,20 @@ const AppNavigator = ({ userToken, userRole }) => {
           </>
         ) : userRole === 'Expert' ? (
           // EXPERT APP STACK
-          <>
-            <Stack.Screen name="ExpertMain" component={ExpertDrawer} />
-            <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
-          </>
+          userStatus === 'Pending' ? (
+            <>
+              <Stack.Screen name="ExpertPending" component={ExpertRegistrationPendingScreen} />
+            </>
+          ) : userStatus === 'Rejected' ? (
+            <>
+              <Stack.Screen name="ExpertRejected" component={ExpertResubmitScreen} />
+            </>
+          ) : (
+            <>
+              <Stack.Screen name="ExpertMain" component={ExpertDrawer} />
+              <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
+            </>
+          )
         ) : (
           // MAIN APP STACK (User Drawer + Sub-screens)
           <>

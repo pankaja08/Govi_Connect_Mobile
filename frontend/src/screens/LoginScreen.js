@@ -36,7 +36,8 @@ const LoginScreen = ({ navigation }) => {
       const response = await apiClient.post('/auth/login', { username, password });
       const { token, data } = response.data;
       const role = data?.user?.role || 'User';
-      await signIn(token, role);
+      const status = data?.user?.status || 'Active'; // Default to Active if not provided
+      await signIn(token, role, status);
     } catch (error) {
       setLoading(false);
       const msg = error.response?.data?.message || 'Something went wrong';

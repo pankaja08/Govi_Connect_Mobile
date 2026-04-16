@@ -326,6 +326,7 @@ const HomeScreen = ({ navigation }) => {
               </Text>
               <Text style={styles.greetingSubtitle}>Welcome to Sri Lanka's First Agri-Community Platform</Text>
             </View>
+
           </View>
 
           {/* Carousel Section */}
