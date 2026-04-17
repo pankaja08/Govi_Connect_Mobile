@@ -46,16 +46,7 @@ const SORT_OPTIONS = [
   { key: 'mostAnswered', label: 'Most Answered', icon: 'chatbubbles-outline' },
 ];
 
-const formatDate = (dateStr) => {
-  const date = new Date(dateStr);
-  const now = new Date();
-  const diff = Math.floor((now - date) / 1000);
-  if (diff < 60) return 'just now';
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: '2-digit' });
-};
+
 
 const getInitials = (name = '') => {
   if (!name) return 'U';
@@ -91,8 +82,8 @@ const QuestionCard = ({ question, currentUserId, onDelete, onEdit, onPress }) =>
   const hasAnswers = question.answers && question.answers.length > 0;
 
   return (
-    <TouchableOpacity 
-      style={styles.questionCard} 
+    <TouchableOpacity
+      style={styles.questionCard}
       activeOpacity={0.8}
       onPress={() => onPress && onPress(question)}
     >
@@ -109,7 +100,7 @@ const QuestionCard = ({ question, currentUserId, onDelete, onEdit, onPress }) =>
         </View>
 
         <View style={styles.cardHeaderActions}>
-           {canModify && (
+          {canModify && (
             <View style={styles.actionBtns}>
               <TouchableOpacity onPress={() => onEdit(question)} style={styles.iconAction}>
                 <Ionicons name="create-outline" size={16} color="#1565C0" />
@@ -122,14 +113,14 @@ const QuestionCard = ({ question, currentUserId, onDelete, onEdit, onPress }) =>
         </View>
 
         <Text style={styles.questionTitle}>{question.text}</Text>
-        
+
         <View style={{ alignSelf: 'flex-start', marginTop: 10 }}>
           <CategoryBadge category={question.category} />
         </View>
 
         <View style={styles.cardFooterInfo}>
           <View style={styles.answerCountBubble}>
-            <Ionicons name="chatbubbles-outline" size={14} color="#2E7D32" style={{marginRight: 6}} />
+            <Ionicons name="chatbubbles-outline" size={14} color="#2E7D32" style={{ marginRight: 6 }} />
             <Text style={styles.answerCountText}>{question.answers?.length || 0} answers</Text>
           </View>
           {hasAnswers && (
@@ -165,12 +156,12 @@ const ExpertQuestionCard = ({ question, currentUserId, onAnswer, onDeleteAnswer,
       <View style={styles.qHeaderRow}>
         <View style={styles.qIconCircle}><Text style={styles.qIconText}>Q</Text></View>
         <View style={{ flex: 1 }}>
-          <Text style={styles.qMetaText} numberOfLines={1}>Asked by <Text style={{fontWeight:'700'}}>{question.authorName}</Text></Text>
+          <Text style={styles.qMetaText} numberOfLines={1}>Asked by <Text style={{ fontWeight: '700' }}>{question.authorName}</Text></Text>
           <Text style={styles.dateText}>{new Date(question.createdAt).toLocaleDateString()}</Text>
         </View>
       </View>
       <Text style={styles.qText}>{question.text}</Text>
-      
+
       {/* Existing Answers for Expert to see/manage */}
       {question.answers && question.answers.length > 0 && (
         <View style={styles.expertExistingAnswers}>
@@ -253,7 +244,7 @@ const ForumScreen = () => {
       setUser(u);
       setUserRole(u.role);
       setCurrentUserId(u._id);
-    }).catch(() => {});
+    }).catch(() => { });
   }, []);
 
   useEffect(() => {
@@ -291,7 +282,7 @@ const ForumScreen = () => {
       fetchQuestions();
       Alert.alert('Success', 'Your question has been posted!');
     } catch (err) {
-       Alert.alert('Error', 'Could not post question.');
+      Alert.alert('Error', 'Could not post question.');
     } finally {
       setSubmittingQuestion(false);
     }
@@ -350,7 +341,8 @@ const ForumScreen = () => {
   const handleDeleteQuestion = async (id) => {
     Alert.alert('Delete', 'Delete this question permanently?', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: async () => {
+      {
+        text: 'Delete', style: 'destructive', onPress: async () => {
           await apiClient.delete(`/forum/${id}`);
           setQuestions(prev => prev.filter(q => q._id !== id));
         }
@@ -382,7 +374,7 @@ const ForumScreen = () => {
       <StatusBar style="dark" />
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          
+
           {/* Header Section */}
           <LinearGradient colors={['#1B5E20', '#2E7D32']} style={styles.header}>
             <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
@@ -478,14 +470,14 @@ const ForumScreen = () => {
           </View>
 
           {loading ? (
-             <ActivityIndicator size="large" color="#2E7D32" style={{ marginTop: 40 }} />
+            <ActivityIndicator size="large" color="#2E7D32" style={{ marginTop: 40 }} />
           ) : (
             questions.map(q => userRole === 'Expert' ? (
-              <ExpertQuestionCard 
-                key={q._id} 
-                question={q} 
+              <ExpertQuestionCard
+                key={q._id}
+                question={q}
                 currentUserId={currentUserId}
-                onAnswer={handleAddAnswer} 
+                onAnswer={handleAddAnswer}
                 onDeleteAnswer={handleDeleteAnswer}
                 onEditAnswer={handleOpenEditAnswer}
               />
