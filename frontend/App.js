@@ -48,6 +48,7 @@ export default function App() {
       await AsyncStorage.removeItem('userToken');
       await AsyncStorage.removeItem('userRole');
       await AsyncStorage.removeItem('userStatus');
+      await AsyncStorage.removeItem('userId');
       setUserToken(null);
       setUserRole(null);
       setUserStatus(null);
