@@ -1,16 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import apiClient from '../api/client';
 
 const { width } = Dimensions.get('window');
 
-const StatCard = ({ title, value, borderColor }) => (
-  <View style={[styles.statCard, { borderLeftColor: borderColor }]}>
-    <Text style={styles.statTitle}>{title}</Text>
-    <Text style={[styles.statValue, { color: borderColor }]}>{value}</Text>
-  </View>
+const StatCard = ({ title, value, colors, icon, iconType = 'Ionicons' }) => (
+  <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper}>
+    <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.statCard}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.statTitle}>{title}</Text>
+        <View style={styles.iconCircle}>
+          {iconType === 'Ionicons' ? (
+            <Ionicons name={icon} size={20} color="#228531ff" />
+          ) : iconType === 'MaterialCommunityIcons' ? (
+            <MaterialCommunityIcons name={icon} size={20} color="#228531ff" />
+          ) : (
+            <FontAwesome5 name={icon} size={18} color="#228531ff" />
+          )}
+        </View>
+      </View>
+
+      <View style={styles.cardFooter}>
+        <Text style={styles.statValue}>{value}</Text>
+      </View>
+    </LinearGradient>
+  </TouchableOpacity>
 );
 
 const AdminDashboardScreen = ({ navigation }) => {
@@ -59,21 +76,43 @@ const AdminDashboardScreen = ({ navigation }) => {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-        {/* Top Stat Cards */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
+        {/* Top Stat Cards - 2x2 Grid */}
+        <View style={styles.gridContainer}>
           {loading ? (
-            <View style={styles.loadingCard}>
-              <ActivityIndicator size="small" color="#2E7D32" />
+            <View style={styles.loadingContainerLarge}>
+              <ActivityIndicator size="large" color="#2E7D32" />
+              <Text style={styles.loadingText}>Fetching Platform Metrics...</Text>
             </View>
           ) : (
             <>
-              <StatCard title="TOTAL USERS" value={stats.totalUsers.toString()} borderColor="#FFB300" />
-              <StatCard title="FARMERS" value={stats.farmers.toString()} borderColor="#2196F3" />
-              <StatCard title="AGRI OFFICERS" value={stats.agriOfficers.toString()} borderColor="#4CAF50" />
-              <StatCard title="PENDING" value={stats.pendingExperts.toString()} borderColor="#F44336" />
+              <StatCard
+                title="Total Users"
+                value={stats.totalUsers.toString()}
+                colors={['#ffffffff', '#ffffffff']}
+                icon="people"
+              />
+              <StatCard
+                title="Farmers"
+                value={stats.farmers.toString()}
+                colors={['#ffffffff', '#ffffffff']}
+                icon="leaf"
+                iconType="MaterialCommunityIcons"
+              />
+              <StatCard
+                title="Agri Officers"
+                value={stats.agriOfficers.toString()}
+                colors={['#ffffffff', '#ffffffff']}
+                icon="school"
+              />
+              <StatCard
+                title="Pending"
+                value={stats.pendingExperts.toString()}
+                colors={['# ffffffff', '#ffffffff']}
+                icon="time"
+              />
             </>
           )}
-        </ScrollView>
+        </View>
 
         <View style={styles.filterBar}>
           <Text style={styles.filterDate}>DATE RANGE: 12/01/2025 - 03/01/2026</Text>
@@ -200,47 +239,88 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-  statsScroll: {
+  gridContainer: {
     flexDirection: 'row',
-    marginBottom: 16,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  cardWrapper: {
+    width: (width - 44) / 2,
+    height: 110,
+    marginBottom: 12,
   },
   statCard: {
+    flex: 5,
+    padding: 15,
+    borderRadius: 20,
+    justifyContent: 'space-between',
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    width: 140,
-    marginRight: 12,
-    borderLeftWidth: 4,
+    borderTopWidth: 5,
+    borderTopColor: '#2b973bff',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+
   },
-  loadingCard: {
-    backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    width: 300,
-    height: 80,
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  iconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#E8F5E9',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  loadingContainerLarge: {
+    width: '100%',
+    height: 250,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '500',
   },
   statTitle: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#757575',
-    marginBottom: 8,
+    fontSize: 17,
+    fontWeight: '600',
+    color: 'rgba(26, 72, 20, 0.9)',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#124f1bff',
+  },
+  percentageContainer: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  percentageText: {
+    fontSize: 10,
     fontWeight: 'bold',
+    color: '#fff',
   },
   filterBar: {
     flexDirection: 'row',
