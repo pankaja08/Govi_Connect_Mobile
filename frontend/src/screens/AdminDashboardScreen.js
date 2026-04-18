@@ -1,7 +1,8 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import apiClient from '../api/client';
 
 const { width } = Dimensions.get('window');
 
@@ -13,6 +14,32 @@ const StatCard = ({ title, value, borderColor }) => (
 );
 
 const AdminDashboardScreen = ({ navigation }) => {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    farmers: 0,
+    agriOfficers: 0,
+    pendingExperts: 0
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get('/users/admin/stats');
+      if (response.data.status === 'success') {
+        setStats(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Custom Header matching Drawer style for uniform look but hidden standard header */}
@@ -34,10 +61,18 @@ const AdminDashboardScreen = ({ navigation }) => {
 
         {/* Top Stat Cards */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
-          <StatCard title="TOTAL USERS" value="9" borderColor="#FFB300" />
-          <StatCard title="FARMERS" value="6" borderColor="#2196F3" />
-          <StatCard title="AGRI OFFICERS" value="1" borderColor="#4CAF50" />
-          <StatCard title="PENDING" value="1" borderColor="#F44336" />
+          {loading ? (
+            <View style={styles.loadingCard}>
+              <ActivityIndicator size="small" color="#2E7D32" />
+            </View>
+          ) : (
+            <>
+              <StatCard title="TOTAL USERS" value={stats.totalUsers.toString()} borderColor="#FFB300" />
+              <StatCard title="FARMERS" value={stats.farmers.toString()} borderColor="#2196F3" />
+              <StatCard title="AGRI OFFICERS" value={stats.agriOfficers.toString()} borderColor="#4CAF50" />
+              <StatCard title="PENDING" value={stats.pendingExperts.toString()} borderColor="#F44336" />
+            </>
+          )}
         </ScrollView>
 
         <View style={styles.filterBar}>
@@ -176,6 +211,21 @@ const styles = StyleSheet.create({
     width: 140,
     marginRight: 12,
     borderLeftWidth: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  loadingCard: {
+    backgroundColor: '#fff',
+    padding: 16,
+    borderRadius: 8,
+    width: 300,
+    height: 80,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,

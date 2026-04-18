@@ -217,9 +217,24 @@ const AdminUsersScreen = ({ navigation }) => {
                   <Text style={styles.cellText}>{user.contactInfo || 'N/A'}</Text>
                   <Text style={styles.cellText}>{user.district || 'N/A'}</Text>
                   <View style={styles.statusCell}>
-                    <View style={styles.statusBadge}>
-                      <View style={styles.statusDot} />
-                      <Text style={styles.statusText}>Active</Text>
+                    <View style={[
+                      styles.statusBadge, 
+                      user.status === 'Pending' ? { backgroundColor: '#FFF7ED' } : 
+                      user.status === 'Rejected' ? { backgroundColor: '#FEF2F2' } : 
+                      { backgroundColor: '#F0FDF4' }
+                    ]}>
+                      <View style={[
+                        styles.statusDot, 
+                        user.status === 'Pending' ? { backgroundColor: '#F97316' } : 
+                        user.status === 'Rejected' ? { backgroundColor: '#EF4444' } : 
+                        { backgroundColor: '#22C55E' }
+                      ]} />
+                      <Text style={[
+                        styles.statusText,
+                        user.status === 'Pending' ? { color: '#C2410C' } : 
+                        user.status === 'Rejected' ? { color: '#B91C1C' } : 
+                        { color: '#15803D' }
+                      ]}>{user.status || 'Active'}</Text>
                     </View>
                   </View>
                   <View style={styles.actionsCell}>

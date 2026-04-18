@@ -39,6 +39,30 @@ exports.deleteMe = async (req, res) => {
 
 // ADMIN ONLY CONTROLLERS
 
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const totalUsers = await User.countDocuments();
+    const farmers = await User.countDocuments({ role: 'User' });
+    const agriOfficers = await User.countDocuments({ 
+      role: 'Expert', 
+      status: { $nin: ['Pending', 'Rejected'] } 
+    });
+    const pendingExperts = await User.countDocuments({ role: 'Expert', status: 'Pending' });
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        totalUsers,
+        farmers,
+        agriOfficers,
+        pendingExperts
+      }
+    });
+  } catch (err) {
+    res.status(400).json({ status: 'fail', message: err.message });
+  }
+};
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find().sort({ role: 1, name: 1 });
