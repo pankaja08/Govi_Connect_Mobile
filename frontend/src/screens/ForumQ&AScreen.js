@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
   headerTitle: { color: '#fff', fontSize: 18, fontWeight: '700' },
   container: { flex: 1, paddingHorizontal: 16, backgroundColor: '#F3F8F2' },
   containerContent: { paddingBottom: 100 },
-  detailCard: { backgroundColor: '#fff', borderRadius: 18, padding: 18, marginTop: 22, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 }, shadowRadius: 10, elevation: 3 },
+  detailCard: { backgroundColor: '#fff', borderRadius: 18, padding: 18, marginTop: 22, shadowColor: '#000', shadowOpacity: 0.05, shadowOffset: { width: 0, height: 2 }, shadowRadius: 10, elevation: 3, borderLeftWidth: 6, borderLeftColor: '#2E7D32' },
   questionText: { fontSize: 18, fontWeight: '700', color: '#1C3F21', lineHeight: 26 },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', marginTop: 12 },
   categoryBadge: { backgroundColor: '#E8F5E9', borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6, marginRight: 10 },
