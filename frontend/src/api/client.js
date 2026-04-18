@@ -9,13 +9,8 @@ const debuggerHost = Constants.expoConfig?.hostUri;
 const localhost = debuggerHost?.split(':')[0] || 'localhost';
 
 const BASE_URL = Platform.OS === 'web' 
-<<<<<<< HEAD
-  ? 'http://localhost:5001/api'
-  : `http://${localhost}:5001/api`;
-=======
   ? 'http://localhost:5000/api'
-  : 'http://192.168.1.7:5000/api'; 
->>>>>>> main
+  : `http://${localhost}:5000/api`;
 
 const apiClient = axios.create({
   baseURL: BASE_URL,

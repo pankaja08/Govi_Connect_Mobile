@@ -12,11 +12,8 @@ dns.setDefaultResultOrder('ipv4first');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const activityRoutes = require('./routes/activityRoutes');
-<<<<<<< HEAD
 const cropRoutes = require('./routes/cropRoutes');
-=======
 const blogRoutes = require('./routes/blogRoutes');
->>>>>>> main
 
 const app = express();
 
@@ -40,11 +37,8 @@ app.use((req, res, next) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/activities', activityRoutes);
-<<<<<<< HEAD
 app.use('/api/farm/crops', cropRoutes);
-=======
 app.use('/api/blogs', blogRoutes);
->>>>>>> main
 
 // Database connection
 const DB = process.env.MONGODB_URI || 'mongodb://localhost:27017/gosconnect';

@@ -21,15 +21,12 @@ import ExpertDashboardScreen from '../screens/ExpertDashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ExpertPastBlogsScreen from '../screens/ExpertPastBlogsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
-<<<<<<< HEAD
 import FarmerTrackerScreen from '../screens/FarmerTrackerScreen';
-=======
 import AdminUsersScreen from '../screens/AdminUsersScreen';
 import BlogDetailScreen from '../screens/BlogDetailScreen';
 import AdminExpertRequestsScreen from '../screens/AdminExpertRequestsScreen';
 import ExpertRegistrationPendingScreen from '../screens/ExpertRegistrationPendingScreen';
 import ExpertResubmitScreen from '../screens/ExpertResubmitScreen';
->>>>>>> main
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -174,17 +171,10 @@ const MainTabNavigator = () => {
       })}
     >
       <Tab.Screen name="HomeTab" component={HomeScreen} options={{ title: 'Home' }} />
-<<<<<<< HEAD
-      <Tab.Screen name="GoviMart" component={GoviMartScreen} options={{ title: 'Govi Mart' }} />
-      <Tab.Screen name="Forum" component={ForumScreen} options={{ title: 'Community Forum' }} />
-      <Tab.Screen name="CropAdvisory" component={CropAdvisoryScreen} options={{ title: 'Crop Advisory' }} />
-      <Tab.Screen name="FarmerTracker" component={FarmerTrackerScreen} options={{ title: 'Tasks' }} />
-=======
       <Tab.Screen name="GoviMart" component={GoviMartScreen} options={{ title: 'Mart' }} />
       <Tab.Screen name="Forum" component={ForumScreen} options={{ title: 'Forum' }} />
       <Tab.Screen name="CropAdvisory" component={CropAdvisoryScreen} options={{ title: 'Advisory' }} />
-      <Tab.Screen name="FarmerTracker" component={ActivityScreen} options={{ title: 'Tasks' }} />
->>>>>>> main
+      <Tab.Screen name="FarmerTracker" component={FarmerTrackerScreen} options={{ title: 'Tasks' }} />
     </Tab.Navigator>
   );
 };
