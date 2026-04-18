@@ -45,13 +45,46 @@ exports.createBlog = async (req, res) => {
 // Get all blogs belonging to the logged in expert
 exports.getMyBlogs = async (req, res) => {
   try {
-    const blogs = await Blog.find({ expertId: req.user._id }).sort({ createdAt: -1 });
+    const mongoose = require('mongoose');
+    const blogs = await Blog.aggregate([
+      { $match: { expertId: new mongoose.Types.ObjectId(req.user._id) } },
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: 'comments',
+          localField: '_id',
+          foreignField: 'blogId',
+          as: 'comments'
+        }
+      },
+      {
+        $addFields: {
+          commentCount: { $size: '$comments' },
+          newCommentCount: {
+            $size: {
+              $filter: {
+                input: '$comments',
+                as: 'comment',
+                cond: { $eq: ['$$comment.isReadByExpert', false] }
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          comments: 0 // Clear the temporary comments array
+        }
+      }
+    ]);
+
     res.status(200).json({
       success: true,
       count: blogs.length,
       data: blogs
     });
   } catch (error) {
+    console.error('Error fetching my blogs:', error);
     res.status(500).json({
       success: false,
       message: 'Server Error'

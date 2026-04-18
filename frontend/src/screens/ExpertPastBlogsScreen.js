@@ -81,13 +81,25 @@ const ExpertPastBlogsScreen = ({ navigation }) => {
         <View style={styles.badgeRow}>
           <Text style={styles.badge}>{item.cropType}</Text>
           <Text style={styles.badge}>{item.season}</Text>
+          {item.newCommentCount > 0 && (
+            <View style={styles.newCommentBadge}>
+              <Ionicons name="notifications" size={10} color="#fff" />
+              <Text style={styles.newCommentBadgeText}>{item.newCommentCount} New</Text>
+            </View>
+          )}
         </View>
 
         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
 
-        <Text style={styles.dateText}>
-          Published on {new Date(item.createdAt).toLocaleDateString()}
-        </Text>
+        <View style={styles.statsRow}>
+          <Text style={styles.dateText}>
+            Published on {new Date(item.createdAt).toLocaleDateString()}
+          </Text>
+          <View style={styles.commentStats}>
+            <Ionicons name="chatbubble-outline" size={14} color="#666" />
+            <Text style={styles.commentStatsText}>{item.commentCount || 0}</Text>
+          </View>
+        </View>
 
         <View style={styles.actionRow}>
           <TouchableOpacity
@@ -256,7 +268,37 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: '#888',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 15
+  },
+  commentStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4
+  },
+  commentStatsText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600'
+  },
+  newCommentBadge: {
+    backgroundColor: '#E53935',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 3,
+    marginLeft: 'auto'
+  },
+  newCommentBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800'
   },
   actionRow: {
     flexDirection: 'row',

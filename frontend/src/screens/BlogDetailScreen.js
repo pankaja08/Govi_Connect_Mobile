@@ -20,7 +20,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import RenderHtml from 'react-native-render-html';
 import { AuthContext } from '../context/AuthContext';
-import { getComments, postComment, toggleCommentLike } from '../api/commentApi';
+import { getComments, postComment, toggleCommentLike, markCommentsAsRead } from '../api/commentApi';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 // ─────────────────────────────────────────────────────────
@@ -39,7 +39,9 @@ const formatTime = (dateStr) => {
 // ─────────────────────────────────────────────────────────
 // Comment Card Component
 // ─────────────────────────────────────────────────────────
-const CommentCard = ({ comment, isRegistered, blogId, currentUserId, onLikeToggled }) => {
+const CommentCard = ({ comment, isRegistered, blogId, currentUserId, onLikeToggled, onReply, isExpertView, blogExpertId }) => {
+  const isReply = !!comment.parentId;
+  const isExpertComment = comment.userId?._id === blogExpertId || comment.userId === blogExpertId;
   const isLiked = comment.likes?.includes(currentUserId);
   const [liked, setLiked] = useState(isLiked);
   const [likeCount, setLikeCount] = useState(comment.likes?.length || 0);
@@ -83,7 +85,11 @@ const CommentCard = ({ comment, isRegistered, blogId, currentUserId, onLikeToggl
   const colorIndex = avatarLetter.charCodeAt(0) % avatarColors.length;
 
   return (
-    <View style={styles.commentCard}>
+    <View style={[
+      styles.commentCard,
+      isExpertComment && styles.expertCommentCard,
+      isReply && styles.replyCard
+    ]}>
       {/* Avatar */}
       <View style={[styles.avatar, { backgroundColor: avatarColors[colorIndex] }]}>
         <Text style={styles.avatarText}>{avatarLetter}</Text>
@@ -93,24 +99,37 @@ const CommentCard = ({ comment, isRegistered, blogId, currentUserId, onLikeToggl
       <View style={styles.commentBody}>
         <View style={styles.commentHeader}>
           <Text style={styles.commentUsername}>{comment.userId?.name || 'User'}</Text>
+          {isExpertComment && (
+            <View style={styles.expertBadge}>
+              <Text style={styles.expertBadgeText}>Expert</Text>
+            </View>
+          )}
           <Text style={styles.commentTime}>{formatTime(comment.createdAt)}</Text>
         </View>
         <Text style={styles.commentText}>{comment.content}</Text>
       </View>
 
-      {/* Like Button */}
-      <TouchableOpacity onPress={handleLike} style={styles.likeBtn} activeOpacity={0.7}>
-        <Animated.View style={{ transform: [{ scale: heartScale }] }}>
-          <Ionicons
-            name={liked ? 'heart' : 'heart-outline'}
-            size={18}
-            color={liked ? '#e53935' : '#aaa'}
-          />
-        </Animated.View>
-        {likeCount > 0 && (
-          <Text style={[styles.likeCount, liked && { color: '#e53935' }]}>{likeCount}</Text>
+      {/* Like and Reply Bar */}
+      <View style={styles.commentActions}>
+        <TouchableOpacity onPress={handleLike} style={styles.likeBtn} activeOpacity={0.7}>
+          <Animated.View style={{ transform: [{ scale: heartScale }] }}>
+            <Ionicons
+              name={liked ? 'heart' : 'heart-outline'}
+              size={18}
+              color={liked ? '#f95754ff' : '#aaa'}
+            />
+          </Animated.View>
+          {likeCount > 0 && (
+            <Text style={[styles.likeCount, liked && { color: '#e53935' }]}>{likeCount}</Text>
+          )}
+        </TouchableOpacity>
+
+        {isExpertView && (
+          <TouchableOpacity onPress={() => onReply(comment)} style={styles.replyBtn}>
+            <Text style={styles.replyBtnText}>Reply</Text>
+          </TouchableOpacity>
         )}
-      </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -118,12 +137,14 @@ const CommentCard = ({ comment, isRegistered, blogId, currentUserId, onLikeToggl
 // ─────────────────────────────────────────────────────────
 // Comments Modal Component
 // ─────────────────────────────────────────────────────────
-const CommentsModal = ({ visible, blogId, onClose, isRegistered }) => {
+const CommentsModal = ({ visible, blogId, onClose, isRegistered, isExpertView, blogExpertId }) => {
   const [comments, setComments] = useState([]);
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [replyTo, setReplyTo] = useState(null);
+  const inputRef = useRef(null);
 
   // Animated values
   const slideAnim = useRef(new Animated.Value(600)).current;
@@ -145,6 +166,9 @@ const CommentsModal = ({ visible, blogId, onClose, isRegistered }) => {
         stiffness: 120,
       }).start();
       fetchComments();
+      if (isExpertView) {
+        markCommentsAsRead(blogId).catch(() => { });
+      }
     } else {
       Animated.timing(slideAnim, {
         toValue: 600,
@@ -159,7 +183,20 @@ const CommentsModal = ({ visible, blogId, onClose, isRegistered }) => {
     setLoading(true);
     try {
       const res = await getComments(blogId);
-      setComments(res.data?.data || []);
+      const allComments = res.data?.data || [];
+
+      // Organize into threads: Parents followed by their replies
+      const parents = allComments.filter(c => !c.parentId).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const children = allComments.filter(c => c.parentId).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+      let grouped = [];
+      parents.forEach(p => {
+        grouped.push(p);
+        const replies = children.filter(c => c.parentId === p._id);
+        grouped.push(...replies);
+      });
+
+      setComments(grouped);
     } catch (e) {
       console.error('Error fetching comments:', e);
     } finally {
@@ -190,17 +227,23 @@ const CommentsModal = ({ visible, blogId, onClose, isRegistered }) => {
     animateSend();
     setSubmitting(true);
     try {
-      const res = await postComment(blogId, text.trim());
+      const res = await postComment(blogId, text.trim(), replyTo?._id);
       const newComment = res.data?.data;
       if (newComment) {
         setComments(prev => [newComment, ...prev]);
       }
       setText('');
+      setReplyTo(null);
     } catch (e) {
       Alert.alert('Error', e.response?.data?.message || 'Failed to post comment.');
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleReplyPress = (comment) => {
+    setReplyTo(comment);
+    inputRef.current?.focus();
   };
 
   const spin = sendRotate.interpolate({
@@ -255,15 +298,23 @@ const CommentsModal = ({ visible, blogId, onClose, isRegistered }) => {
                 <FlatList
                   data={comments}
                   keyExtractor={(item) => item._id}
-                  renderItem={({ item }) => (
-                    <CommentCard
-                      comment={item}
-                      isRegistered={isRegistered}
-                      blogId={blogId}
-                      currentUserId={currentUserId}
-                      onLikeToggled={fetchComments}
-                    />
-                  )}
+                  renderItem={({ item }) => {
+                    const isReply = !!item.parentId;
+                    return (
+                      <View style={isReply ? styles.replyThreadWrapper : styles.parentThreadWrapper}>
+                        <CommentCard
+                          comment={item}
+                          isRegistered={isRegistered}
+                          blogId={blogId}
+                          currentUserId={currentUserId}
+                          onLikeToggled={fetchComments}
+                          onReply={handleReplyPress}
+                          isExpertView={isExpertView}
+                          blogExpertId={blogExpertId}
+                        />
+                      </View>
+                    );
+                  }}
                   contentContainerStyle={{ paddingHorizontal: 16, paddingBottom: 120 }}
                   showsVerticalScrollIndicator={false}
                   ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -273,43 +324,56 @@ const CommentsModal = ({ visible, blogId, onClose, isRegistered }) => {
               {/* Input Bar */}
               <View style={styles.inputBar}>
                 {isRegistered ? (
-                  <>
-                    <View style={styles.inputWrapper}>
-                      <TextInput
-                        style={styles.textInput}
-                        placeholder="Add a comment..."
-                        placeholderTextColor="#aaa"
-                        value={text}
-                        onChangeText={setText}
-                        multiline
-                        maxLength={1000}
-                        returnKeyType="default"
-                      />
-                    </View>
+                  <View style={{ flex: 1 }}>
+                    {replyTo && (
+                      <View style={styles.replyPreview}>
+                        <Text style={styles.replyPreviewText}>
+                          Replying to <Text style={{ fontWeight: 'bold' }}>{replyTo.userId?.name}</Text>
+                        </Text>
+                        <TouchableOpacity onPress={() => setReplyTo(null)}>
+                          <Ionicons name="close-circle" size={18} color="#888" />
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-end' }}>
+                      <View style={styles.inputWrapper}>
+                        <TextInput
+                          ref={inputRef}
+                          style={styles.textInput}
+                          placeholder={replyTo ? "Write a reply..." : "Add a comment..."}
+                          placeholderTextColor="#aaa"
+                          value={text}
+                          onChangeText={setText}
+                          multiline
+                          maxLength={1000}
+                          returnKeyType="default"
+                        />
+                      </View>
 
-                    <TouchableOpacity
-                      onPress={handleSubmit}
-                      disabled={!text.trim() || submitting}
-                      style={[
-                        styles.sendBtn,
-                        (!text.trim() || submitting) && styles.sendBtnDisabled,
-                      ]}
-                      activeOpacity={0.8}
-                    >
-                      <Animated.View
-                        style={{
-                          transform: [{ scale: sendScale }, { rotate: spin }],
-                          opacity: sendOpacity,
-                        }}
+                      <TouchableOpacity
+                        onPress={handleSubmit}
+                        disabled={!text.trim() || submitting}
+                        style={[
+                          styles.sendBtn,
+                          (!text.trim() || submitting) && styles.sendBtnDisabled,
+                        ]}
+                        activeOpacity={0.8}
                       >
-                        {submitting ? (
-                          <ActivityIndicator size="small" color="#fff" />
-                        ) : (
-                          <Ionicons name="arrow-up" size={20} color="#fff" />
-                        )}
-                      </Animated.View>
-                    </TouchableOpacity>
-                  </>
+                        <Animated.View
+                          style={{
+                            transform: [{ scale: sendScale }, { rotate: spin }],
+                            opacity: sendOpacity,
+                          }}
+                        >
+                          {submitting ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                          ) : (
+                            <Ionicons name="arrow-up" size={20} color="#fff" />
+                          )}
+                        </Animated.View>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
                 ) : (
                   <View style={styles.guestBanner}>
                     <Ionicons name="lock-closed-outline" size={16} color="#888" />
@@ -338,6 +402,11 @@ const BlogDetailScreen = ({ route, navigation }) => {
 
   const [commentsVisible, setCommentsVisible] = useState(false);
   const [commentCount, setCommentCount] = useState(0);
+  const [currentUserId, setCurrentUserId] = useState(null);
+
+  useEffect(() => {
+    AsyncStorage.getItem('userId').then(id => setCurrentUserId(id));
+  }, []);
 
   // Fetch comment count on mount
   useEffect(() => {
@@ -447,6 +516,11 @@ const BlogDetailScreen = ({ route, navigation }) => {
             .catch(() => { });
         }}
         isRegistered={isRegistered}
+        isExpertView={
+          userRole?.toLowerCase() === 'expert' &&
+          (blog.expertId === currentUserId || blog.expertId?._id === currentUserId)
+        }
+        blogExpertId={blog.expertId?._id || blog.expertId}
       />
     </SafeAreaView>
   );
@@ -632,8 +706,50 @@ const styles = StyleSheet.create({
   commentUsername: { fontSize: 13, fontWeight: '700', color: '#111', marginRight: 8 },
   commentTime: { fontSize: 11, color: '#aaa' },
   commentText: { fontSize: 14, color: '#333', lineHeight: 20 },
-  likeBtn: { alignItems: 'center', paddingLeft: 10, paddingTop: 2, minWidth: 36 },
-  likeCount: { fontSize: 11, color: '#aaa', marginTop: 2, fontWeight: '600' },
+  commentActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 6,
+    gap: 15
+  },
+  expertCommentCard: {
+    backgroundColor: '#fffdf0',
+    borderRadius: 12,
+    marginHorizontal: -8,
+    paddingHorizontal: 8,
+    borderWidth: 1,
+    borderColor: '#feedaf',
+  },
+  expertBadge: {
+    backgroundColor: '#F59E0B',
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    borderRadius: 4,
+    marginRight: 8,
+  },
+  expertBadgeText: {
+    color: '#fff',
+    fontSize: 9,
+    fontWeight: '800',
+    textTransform: 'uppercase',
+  },
+  replyCard: {
+    marginLeft: 0,
+  },
+  replyThreadWrapper: {
+    marginLeft: 40,
+    borderLeftWidth: 2,
+    borderLeftColor: '#f0f0f0',
+    paddingLeft: 12,
+    marginBottom: 4,
+  },
+  parentThreadWrapper: {
+    marginBottom: 4,
+  },
+  likeBtn: { flexDirection: 'row', alignItems: 'center', minWidth: 24 },
+  likeCount: { fontSize: 11, color: '#aaa', marginLeft: 4, fontWeight: '600' },
+  replyBtn: { paddingVertical: 2 },
+  replyBtnText: { fontSize: 11, fontWeight: '700', color: '#1F9A4E' },
   separator: { height: 1, backgroundColor: '#f4f4f4', marginLeft: 48 },
 
   // ── Input bar ──
@@ -642,10 +758,26 @@ const styles = StyleSheet.create({
     alignItems: 'flex-end',
     paddingHorizontal: 16,
     paddingTop: 10,
-    paddingBottom: 8,
+    paddingBottom: 20,
     borderTopWidth: 1,
     borderTopColor: '#f0f0f0',
     backgroundColor: '#fff',
+  },
+  replyPreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#f0f7f2',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 8,
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#1F9A4E',
+  },
+  replyPreviewText: {
+    fontSize: 12,
+    color: '#1F9A4E',
   },
   inputWrapper: {
     flex: 1,
