@@ -111,3 +111,27 @@ exports.updateAnalytics = async (req, res) => {
     res.status(400).json({ status: 'fail', message: err.message });
   }
 };
+
+exports.toggleActivityStatus = async (req, res) => {
+  try {
+    const crop = await Crop.findOne({ _id: req.params.id, user: req.user.id });
+    if (!crop) {
+      return res.status(404).json({ message: 'No crop found with that ID' });
+    }
+
+    const activity = crop.activities.id(req.params.activityId);
+    if (!activity) {
+      return res.status(404).json({ message: 'No activity found' });
+    }
+
+    activity.isCompleted = !activity.isCompleted;
+    await crop.save();
+
+    res.status(200).json({
+      status: 'success',
+      data: { crop }
+    });
+  } catch (err) {
+    res.status(400).json({ status: 'fail', message: err.message });
+  }
+};

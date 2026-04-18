@@ -56,9 +56,11 @@ const FarmerTrackerScreen = () => {
   const [cropModalVisible, setCropModalVisible] = useState(false);
   const [activityModalVisible, setActivityModalVisible] = useState(false);
   const [yieldModalVisible, setYieldModalVisible] = useState(false);
+  const [dayEventsModalVisible, setDayEventsModalVisible] = useState(false);
   
   // Current Item states
   const [currentCrop, setCurrentCrop] = useState(null);
+  const [selectedDateEvents, setSelectedDateEvents] = useState({ date: '', events: [] });
   const [newCropForm, setNewCropForm] = useState({
     cropName: '', season: 'Yala', plantedDate: new Date(), harvestExpectedDate: new Date(), fieldSize: '', seedVariety: ''
   });
@@ -169,6 +171,16 @@ const FarmerTrackerScreen = () => {
     }
   };
 
+  const handleToggleActivityStatus = async (cropId, activityId) => {
+    try {
+      const res = await apiClient.put(`/farm/crops/${cropId}/activities/${activityId}/toggle`);
+      setCrops(crops.map(c => c._id === cropId ? res.data.data.crop : c));
+    } catch (error) {
+      console.error(error);
+      showAlert('Error', 'Failed to update activity status');
+    }
+  };
+
   const openYieldModal = (crop) => {
     setCurrentCrop(crop);
     setYieldForm({ yieldAmount: String(crop.yieldAmount || ''), incomeAmount: String(crop.incomeAmount || '') });
@@ -187,19 +199,68 @@ const FarmerTrackerScreen = () => {
     }
   };
 
+  const handleDayPress = (day) => {
+    const clickedDate = day.dateString;
+    const dayEvents = [];
+
+    crops.forEach(crop => {
+      if (crop.plantedDate) {
+        const planted = new Date(crop.plantedDate).toISOString().split('T')[0];
+        if (planted === clickedDate) {
+          dayEvents.push({ id: `p-${crop._id}`, type: 'Planting', title: `Planted ${crop.cropName}`, description: `Field Size: ${crop.fieldSize} Acres`, color: '#16a34a' });
+        }
+      }
+      
+      if (crop.harvestExpectedDate) {
+        const harvest = new Date(crop.harvestExpectedDate).toISOString().split('T')[0];
+        if (harvest === clickedDate) {
+          dayEvents.push({ id: `h-${crop._id}`, type: 'Harvest', title: `Expected Harvest: ${crop.cropName}`, description: `Season: ${crop.season}`, color: '#ca8a04' });
+        }
+      }
+
+      if (crop.activities && Array.isArray(crop.activities)) {
+        crop.activities.forEach(act => {
+          if (act.activityDate) {
+            const actDate = new Date(act.activityDate).toISOString().split('T')[0];
+            if (actDate === clickedDate) {
+              dayEvents.push({ 
+                id: act._id || Math.random().toString(), 
+                type: 'Activity', 
+                title: `${crop.cropName} - ${act.activityType}`, 
+                description: act.activityName, 
+                color: '#2563eb',
+                isCompleted: act.isCompleted
+              });
+            }
+          }
+        });
+      }
+    });
+
+    setSelectedDateEvents({ date: clickedDate, events: dayEvents });
+    setDayEventsModalVisible(true);
+  };
+
   const getMarkedDates = () => {
     let marked = {};
     crops.forEach(crop => {
-      const planted = new Date(crop.plantedDate).toISOString().split('T')[0];
-      const harvest = new Date(crop.harvestExpectedDate).toISOString().split('T')[0];
+      if (crop.plantedDate) {
+        const planted = new Date(crop.plantedDate).toISOString().split('T')[0];
+        marked[planted] = { ...marked[planted], marked: true, dotColor: '#16a34a' }; // Green for plant
+      }
+      if (crop.harvestExpectedDate) {
+        const harvest = new Date(crop.harvestExpectedDate).toISOString().split('T')[0];
+        marked[harvest] = { ...marked[harvest], marked: true, dotColor: '#ca8a04' }; // Gold for harvest
+      }
       
-      marked[planted] = { ...marked[planted], marked: true, dotColor: '#16a34a' }; // Green for plant
-      marked[harvest] = { ...marked[harvest], marked: true, dotColor: '#ca8a04' }; // Gold for harvest
-      
-      crop.activities.forEach(act => {
-        const actDate = new Date(act.activityDate).toISOString().split('T')[0];
-        marked[actDate] = { ...marked[actDate], marked: true, dotColor: '#2563eb' }; // Blue for activity
-      });
+      if (crop.activities && Array.isArray(crop.activities)) {
+        crop.activities.forEach(act => {
+          if (act.activityDate) {
+             const actDate = new Date(act.activityDate).toISOString().split('T')[0];
+             marked[actDate] = { ...marked[actDate], marked: true, dotColor: '#2563eb' }; // Blue for activity
+          }
+        });
+      }
     });
     return marked;
   };
@@ -269,6 +330,7 @@ const FarmerTrackerScreen = () => {
                <Text style={styles.sectionTitle}>Crop Calendar</Text>
                <Calendar
                  markedDates={getMarkedDates()}
+                 onDayPress={handleDayPress}
                  theme={{
                    todayTextColor: '#10B981',
                    arrowColor: '#111827',
@@ -287,6 +349,7 @@ const FarmerTrackerScreen = () => {
             onUpdateYield={openYieldModal}
             onEdit={openCropModal}
             onDelete={handleDeleteCrop}
+            onToggleActivity={handleToggleActivityStatus}
           />
         )}
         ListEmptyComponent={() => (
@@ -401,6 +464,40 @@ const FarmerTrackerScreen = () => {
           <TouchableOpacity style={styles.submitBtn} onPress={handleSaveYield}>
             <Text style={styles.submitBtnText}>Save Yield</Text>
           </TouchableOpacity>
+        </View>
+      </Modal>
+
+      {/* DAY EVENTS MODAL */}
+      <Modal isVisible={dayEventsModalVisible} onBackdropPress={() => setDayEventsModalVisible(false)} style={styles.bottomModal}>
+        <View style={styles.sheetContent}>
+          <View style={styles.sheetHeader}>
+            <Text style={styles.sheetTitle}>Events on {selectedDateEvents.date}</Text>
+            <TouchableOpacity onPress={() => setDayEventsModalVisible(false)}><Ionicons name="close" size={24} color="#6B7280" /></TouchableOpacity>
+          </View>
+          <ScrollView>
+            {selectedDateEvents.events.length > 0 ? (
+              selectedDateEvents.events.map((evt, idx) => (
+                <View key={evt.id || idx} style={[styles.eventItem, { borderLeftColor: evt.color || '#10B981' }]}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text style={[styles.eventTitle, { textDecorationLine: evt.isCompleted ? 'line-through' : 'none' }]}>{evt.title}</Text>
+                    {evt.type === 'Activity' && (
+                       <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, backgroundColor: evt.isCompleted ? '#10B98120' : '#f59e0b20' }}>
+                         <Text style={{ fontSize: 12, fontWeight: '600', color: evt.isCompleted ? '#10B981' : '#f59e0b' }}>
+                           {evt.isCompleted ? 'Completed' : 'Pending'}
+                         </Text>
+                       </View>
+                    )}
+                  </View>
+                  <Text style={styles.eventDesc}>{evt.description}</Text>
+                </View>
+              ))
+            ) : (
+              <View style={{ paddingVertical: 20, alignItems: 'center' }}>
+                <Ionicons name="calendar-outline" size={40} color="#D1D5DB" />
+                <Text style={{ color: '#6B7280', marginTop: 10 }}>No events or activities on this day.</Text>
+              </View>
+            )}
+          </ScrollView>
         </View>
       </Modal>
 
@@ -521,7 +618,18 @@ const styles = StyleSheet.create({
   pickerContainer: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, backgroundColor: '#F9FAFB' },
   datePickerBtn: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 14, backgroundColor: '#F9FAFB' },
   submitBtn: { backgroundColor: '#10B981', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 24, marginBottom: 20 },
-  submitBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 }
+  submitBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  eventItem: {
+    backgroundColor: '#F9FAFB',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 10,
+    borderLeftWidth: 4,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  eventTitle: { fontSize: 16, fontWeight: 'bold', color: '#111827' },
+  eventDesc: { fontSize: 14, color: '#6B7280', marginTop: 4 }
 });
 
 export default FarmerTrackerScreen;

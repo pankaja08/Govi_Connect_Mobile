@@ -18,6 +18,10 @@ const ActivitySchema = new mongoose.Schema({
     type: Date,
     required: [true, 'Activity date is required'],
     default: Date.now
+  },
+  isCompleted: {
+    type: Boolean,
+    default: false
   }
 });
 

@@ -25,4 +25,8 @@ router
   .route('/:id/analytics')
   .put(cropController.updateAnalytics);
 
+router
+  .route('/:id/activities/:activityId/toggle')
+  .put(cropController.toggleActivityStatus);
+
 module.exports = router;

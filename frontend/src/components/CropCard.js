@@ -2,17 +2,14 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const CropCard = ({ crop, onAddActivity, onUpdateYield, onEdit, onDelete }) => {
+const CropCard = ({ crop, onAddActivity, onUpdateYield, onEdit, onDelete, onToggleActivity }) => {
   const isYieldCompleted = crop.yieldAmount > 0;
   
   // Sort activities by date descending
   const activities = [...crop.activities].sort((a, b) => new Date(b.activityDate) - new Date(a.activityDate));
-  
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
 
-  const doneActivities = activities.filter(a => new Date(a.activityDate) <= today);
-  const todoActivities = activities.filter(a => new Date(a.activityDate) > today);
+  const doneActivities = activities.filter(a => a.isCompleted);
+  const todoActivities = activities.filter(a => !a.isCompleted);
 
   const getSeasonColor = (season) => {
     switch (season) {
@@ -91,6 +88,9 @@ const CropCard = ({ crop, onAddActivity, onUpdateYield, onEdit, onDelete }) => {
                      <Text style={styles.activityName}>{act.activityType}: {act.activityName}</Text>
                      <Text style={styles.activityDateText}>{new Date(act.activityDate).toLocaleDateString()}</Text>
                    </View>
+                   <TouchableOpacity onPress={() => onToggleActivity(crop._id, act._id)}>
+                     <Ionicons name="ellipse-outline" size={24} color="#D1D5DB" />
+                   </TouchableOpacity>
                  </View>
                ))}
              </View>
@@ -104,9 +104,12 @@ const CropCard = ({ crop, onAddActivity, onUpdateYield, onEdit, onDelete }) => {
                  <View key={act._id} style={styles.activityRow}>
                    <View style={[styles.activityIndicator, { backgroundColor: '#10B981' }]} />
                    <View style={styles.activityDetails}>
-                     <Text style={[styles.activityName, { color: '#6B7280' }]}>{act.activityType}: {act.activityName}</Text>
+                     <Text style={[styles.activityName, { color: '#6B7280', textDecorationLine: 'line-through' }]}>{act.activityType}: {act.activityName}</Text>
                      <Text style={styles.activityDateText}>{new Date(act.activityDate).toLocaleDateString()}</Text>
                    </View>
+                   <TouchableOpacity onPress={() => onToggleActivity(crop._id, act._id)}>
+                     <Ionicons name="checkmark-circle" size={24} color="#10B981" />
+                   </TouchableOpacity>
                  </View>
                ))}
              </View>
