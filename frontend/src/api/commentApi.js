@@ -11,8 +11,15 @@ export const getComments = (blogId) => apiClient.get(`/blogs/${blogId}/comments`
  * @param {string} blogId
  * @param {string} content
  */
-export const postComment = (blogId, content) =>
-  apiClient.post(`/blogs/${blogId}/comments`, { content });
+export const postComment = (blogId, content, parentId = null) =>
+  apiClient.post(`/blogs/${blogId}/comments`, { content, parentId });
+
+/**
+ * Mark all comments for a blog as read by expert (requires expert/admin auth).
+ * @param {string} blogId
+ */
+export const markCommentsAsRead = (blogId) =>
+  apiClient.patch(`/blogs/${blogId}/comments/read`);
 
 /**
  * Toggle like on a specific comment (requires auth token).
