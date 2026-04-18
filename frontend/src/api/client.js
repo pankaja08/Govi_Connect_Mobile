@@ -8,7 +8,7 @@ import Constants from 'expo-constants';
 const debuggerHost = Constants.expoConfig?.hostUri;
 const localhost = debuggerHost?.split(':')[0] || 'localhost';
 
-const BASE_URL = Platform.OS === 'web' 
+const BASE_URL = Platform.OS === 'web'
   ? 'http://localhost:5000/api'
   : `http://${localhost}:5000/api`;
 

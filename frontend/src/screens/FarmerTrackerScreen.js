@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, 
 import Modal from 'react-native-modal';
 import { Calendar } from 'react-native-calendars';
 import { Picker } from '@react-native-picker/picker';
-import DatePicker from 'react-native-date-picker';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
 import CropCard from '../components/CropCard';
@@ -39,10 +39,17 @@ const WebDatePicker = ({ value, onChange }) => {
   if (Platform.OS !== 'web') return null;
   return React.createElement('input', {
     type: 'date',
-    value: value.toISOString().split('T')[0],
+    value: safeDateStr(value) || new Date().toISOString().split('T')[0],
     onChange: (e) => onChange(new Date(e.target.value)),
     style: { border: 'none', background: 'transparent', width: '100%', fontSize: 15, outline: 'none', color: '#111827', fontFamily: 'system-ui' }
   });
+};
+
+const safeDateStr = (dateVal) => {
+  if (!dateVal) return null;
+  const d = new Date(dateVal);
+  if (isNaN(d.getTime())) return null;
+  return d.toISOString().split('T')[0];
 };
 
 const FarmerTrackerScreen = () => {
@@ -205,14 +212,14 @@ const FarmerTrackerScreen = () => {
 
     crops.forEach(crop => {
       if (crop.plantedDate) {
-        const planted = new Date(crop.plantedDate).toISOString().split('T')[0];
+        const planted = safeDateStr(crop.plantedDate);
         if (planted === clickedDate) {
           dayEvents.push({ id: `p-${crop._id}`, type: 'Planting', title: `Planted ${crop.cropName}`, description: `Field Size: ${crop.fieldSize} Acres`, color: '#16a34a' });
         }
       }
       
       if (crop.harvestExpectedDate) {
-        const harvest = new Date(crop.harvestExpectedDate).toISOString().split('T')[0];
+        const harvest = safeDateStr(crop.harvestExpectedDate);
         if (harvest === clickedDate) {
           dayEvents.push({ id: `h-${crop._id}`, type: 'Harvest', title: `Expected Harvest: ${crop.cropName}`, description: `Season: ${crop.season}`, color: '#ca8a04' });
         }
@@ -221,17 +228,17 @@ const FarmerTrackerScreen = () => {
       if (crop.activities && Array.isArray(crop.activities)) {
         crop.activities.forEach(act => {
           if (act.activityDate) {
-            const actDate = new Date(act.activityDate).toISOString().split('T')[0];
-            if (actDate === clickedDate) {
-              dayEvents.push({ 
-                id: act._id || Math.random().toString(), 
-                type: 'Activity', 
-                title: `${crop.cropName} - ${act.activityType}`, 
-                description: act.activityName, 
-                color: '#2563eb',
-                isCompleted: act.isCompleted
-              });
-            }
+             const actDate = safeDateStr(act.activityDate);
+             if (actDate === clickedDate) {
+               dayEvents.push({ 
+                 id: act._id || Math.random().toString(), 
+                 type: 'Activity', 
+                 title: `${crop.cropName} - ${act.activityType}`, 
+                 description: act.activityName, 
+                 color: '#2563eb',
+                 isCompleted: act.isCompleted
+               });
+             }
           }
         });
       }
@@ -245,19 +252,19 @@ const FarmerTrackerScreen = () => {
     let marked = {};
     crops.forEach(crop => {
       if (crop.plantedDate) {
-        const planted = new Date(crop.plantedDate).toISOString().split('T')[0];
-        marked[planted] = { ...marked[planted], marked: true, dotColor: '#16a34a' }; // Green for plant
+        const planted = safeDateStr(crop.plantedDate);
+        if (planted) marked[planted] = { ...marked[planted], marked: true, dotColor: '#16a34a' };
       }
       if (crop.harvestExpectedDate) {
-        const harvest = new Date(crop.harvestExpectedDate).toISOString().split('T')[0];
-        marked[harvest] = { ...marked[harvest], marked: true, dotColor: '#ca8a04' }; // Gold for harvest
+        const harvest = safeDateStr(crop.harvestExpectedDate);
+        if (harvest) marked[harvest] = { ...marked[harvest], marked: true, dotColor: '#ca8a04' };
       }
       
       if (crop.activities && Array.isArray(crop.activities)) {
         crop.activities.forEach(act => {
           if (act.activityDate) {
-             const actDate = new Date(act.activityDate).toISOString().split('T')[0];
-             marked[actDate] = { ...marked[actDate], marked: true, dotColor: '#2563eb' }; // Blue for activity
+             const actDate = safeDateStr(act.activityDate);
+             if (actDate) marked[actDate] = { ...marked[actDate], marked: true, dotColor: '#2563eb' };
           }
         });
       }
@@ -501,22 +508,25 @@ const FarmerTrackerScreen = () => {
         </View>
       </Modal>
 
-      {Platform.OS !== 'web' && (
-        <DatePicker
-          modal
-          open={datePickerOpen.open}
-          date={datePickerOpen.field && newCropForm[datePickerOpen.field] ? newCropForm[datePickerOpen.field] : new Date()}
+      {Platform.OS !== 'web' && datePickerOpen.open && (
+        <DateTimePicker
+          value={(() => {
+            const val = datePickerOpen.field === 'activityDate' ? newActivityForm.activityDate : newCropForm[datePickerOpen.field];
+            if (val instanceof Date && !isNaN(val.getTime())) return val;
+            return new Date();
+          })()}
           mode="date"
-          onConfirm={(date) => {
-            if(datePickerOpen.field === 'activityDate'){
-               setNewActivityForm({...newActivityForm, activityDate: date});
-            } else {
-               setNewCropForm({...newCropForm, [datePickerOpen.field]: date});
+          display="default"
+          onChange={(event, selectedDate) => {
+            setDatePickerOpen({ open: false, field: null });
+            if (event.type === 'set' && selectedDate) {
+              if (datePickerOpen.field === 'activityDate') {
+                setNewActivityForm(prev => ({...prev, activityDate: selectedDate}));
+              } else if (datePickerOpen.field) {
+                const field = datePickerOpen.field;
+                setNewCropForm(prev => ({...prev, [field]: selectedDate}));
+              }
             }
-            setDatePickerOpen({ open: false, field: null });
-          }}
-          onCancel={() => {
-            setDatePickerOpen({ open: false, field: null });
           }}
         />
       )}
