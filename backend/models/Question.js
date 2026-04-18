@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 
 const answerSchema = new mongoose.Schema({
-  text: { type: String, required: true, minlength: 5, maxlength: 1000 },
+  text: { type: String, required: true, minlength: 5, maxlength: 5000 },
   author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   authorName: { type: String },
   authorRole: { type: String },

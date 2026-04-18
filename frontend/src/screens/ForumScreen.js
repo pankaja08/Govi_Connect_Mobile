@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import apiClient from '../api/client';
 
@@ -151,7 +151,8 @@ const ExpertQuestionCard = ({ question, currentUserId, onAnswer, onDeleteAnswer,
 
   const handleSubmit = async () => {
     if (answerText.trim().length < 5) {
-      Alert.alert('Too short', 'Please provide a more detailed answer.');
+      if (Platform.OS === 'web') window.alert('Please provide a more detailed answer.');
+      else Alert.alert('Too short', 'Please provide a more detailed answer.');
       return;
     }
     setIsSubmitting(true);
@@ -233,10 +234,6 @@ const ForumScreen = () => {
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
   const [userRole, setUserRole] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [editingQuestion, setEditingQuestion] = useState(null);
-  const [editText, setEditText] = useState('');
-  const [editCategory, setEditCategory] = useState('');
-  const [showEditModal, setShowEditModal] = useState(false);
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
   const [editingAnswer, setEditingAnswer] = useState(null);
   const [editAnswerText, setEditAnswerText] = useState('');
@@ -256,9 +253,11 @@ const ForumScreen = () => {
     }).catch(() => { });
   }, []);
 
-  useEffect(() => {
-    fetchQuestions();
-  }, [debouncedSearch, sortKey, myQuestionsOnly, selectedCategory]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchQuestions();
+    }, [debouncedSearch, sortKey, myQuestionsOnly, selectedCategory])
+  );
 
   const fetchQuestions = async () => {
     try {
@@ -305,7 +304,9 @@ const ForumScreen = () => {
       const updatedQ = res.data.data.question;
       setQuestions(prev => prev.map(q => q._id === id ? updatedQ : q));
     } catch (err) {
-      Alert.alert('Error', 'Could not post answer.');
+      const errorMsg = err.response?.data?.message || err.message || JSON.stringify(err);
+      if (Platform.OS === 'web') window.alert(`Could not post answer. Error: ${errorMsg}`);
+      else Alert.alert('Error', `Could not post answer. Error: ${errorMsg}`);
     } finally {
       setSubmittingAnswer(false);
     }
@@ -343,33 +344,42 @@ const ForumScreen = () => {
       setEditingAnswer(null);
       setEditAnswerText('');
     } catch (err) {
-      Alert.alert('Error', 'Could not update answer.');
+      console.error('Answer Update Error:', err.response?.data || err.message);
+      if (Platform.OS === 'web') window.alert('Could not update answer.');
+      else Alert.alert('Error', 'Could not update answer.');
     }
   };
 
   const handleDeleteQuestion = async (id) => {
-    Alert.alert('Delete', 'Delete this question permanently?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Delete', style: 'destructive', onPress: async () => {
+    if (Platform.OS === 'web') {
+      const confirmed = window.confirm('Delete this question permanently?');
+      if (confirmed) {
+        try {
           await apiClient.delete(`/forum/${id}`);
           setQuestions(prev => prev.filter(q => q._id !== id));
+        } catch (err) {
+          window.alert('Could not delete question.');
         }
       }
-    ]);
+    } else {
+      Alert.alert('Delete', 'Delete this question permanently?', [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete', style: 'destructive', onPress: async () => {
+            try {
+              await apiClient.delete(`/forum/${id}`);
+              setQuestions(prev => prev.filter(q => q._id !== id));
+            } catch (err) {
+              Alert.alert('Error', 'Could not delete question.');
+            }
+          }
+        }
+      ]);
+    }
   };
 
   const handleOpenEdit = (q) => {
-    setEditingQuestion(q);
-    setEditText(q.text);
-    setEditCategory(q.category);
-    setShowEditModal(true);
-  };
-
-  const handleSaveEdit = async () => {
-    await apiClient.patch(`/forum/${editingQuestion._id}`, { text: editText, category: editCategory });
-    fetchQuestions();
-    setShowEditModal(false);
+    navigation.navigate('ForumEditQuestion', { question: q });
   };
 
   const handleOpenDetail = (q) => {
@@ -499,18 +509,6 @@ const ForumScreen = () => {
         </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Edit Modal */}
-      <Modal visible={showEditModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Question</Text>
-            <TextInput style={styles.editInput} value={editText} onChangeText={setEditText} multiline />
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveEdit}><Text style={styles.saveBtnText}>Save Changes</Text></TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowEditModal(false)} style={styles.cancelBtn}><Text style={styles.cancelBtnText}>Cancel</Text></TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-
       {/* Edit Answer Modal */}
       <Modal visible={showEditAnswerModal} transparent animationType="fade">
         <View style={styles.modalOverlay}>
@@ -583,7 +581,7 @@ const styles = StyleSheet.create({
   roleTextUser: { color: '#2E7D32', fontSize: 9, fontWeight: '800' },
   verticalDivider: { marginHorizontal: 8, color: '#ccc' },
   dateText: { fontSize: 10, color: '#999' },
-  cardHeaderActions: { position: 'absolute', top: 12, right: 16 },
+  cardHeaderActions: { position: 'absolute', top: -4, right: 0 },
   actionBtns: { flexDirection: 'row', gap: 10 },
   iconAction: { padding: 4 },
   questionTitle: { fontSize: 15, fontWeight: '700', color: '#333', lineHeight: 22 },
