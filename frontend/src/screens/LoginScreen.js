@@ -8,12 +8,12 @@ import {
   Alert,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
-import { AuthContext } from '../../App';
+import { AuthContext } from '../context/AuthContext';
 
 const LoginScreen = ({ navigation }) => {
   const { signIn, continueAsGuest } = React.useContext(AuthContext);
@@ -36,7 +36,8 @@ const LoginScreen = ({ navigation }) => {
       const response = await apiClient.post('/auth/login', { username, password });
       const { token, data } = response.data;
       const role = data?.user?.role || 'User';
-      await signIn(token, role);
+      const status = data?.user?.status || 'Active'; // Default to Active if not provided
+      await signIn(token, role, status);
     } catch (error) {
       setLoading(false);
       const msg = error.response?.data?.message || 'Something went wrong';

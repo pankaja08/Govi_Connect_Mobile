@@ -5,100 +5,201 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  SafeAreaView,
   ActivityIndicator,
   TextInput,
   Image,
   Dimensions,
   Platform,
-  FlatList
+  FlatList,
+  useWindowDimensions,
+  Modal
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import apiClient from '../api/client';
 
-const { width: viewportWidth } = Dimensions.get('window');
-const ITEM_WIDTH = viewportWidth - 20;
-const ITEM_HEIGHT = 200;
-const ITEM_MARGIN = 10;
-const ITEM_SPACING = 10;
-
 const CAROUSEL_DATA = [
   {
     id: '0',
-    badge: 'SRI LANKA AGRICULTURE',
-    title: 'Sri Lanka First all in one',
-    highlightTitle: 'Agriculture Platform',
-    desc: 'Connecting farmers, agricultural officers, and communities across every province of Sri Lanka.',
-    image: 'https://images.pexels.com/photos/422218/pexels-photo-422218.jpeg?auto=compress&cs=tinysrgb&w=800',
-    color: '#166142ff',
-    isSpecial: true
+    badge: 'Trending',
+    title: 'Sri Lanka First all in one Agriculture Platform',
+    articleCount: '34 articles',
+    readCount: '1720 reads',
+    image: 'https://images.pexels.com/photos/2886937/pexels-photo-2886937.jpeg?auto=compress&cs=tinysrgb&w=1000',
+    color: '#166142'
   },
   {
     id: '1',
-    title: 'Boost Your Harvest!',
-    desc: 'Discover modern farming tips, market prices, and expert advice.',
-    image: 'https://images.pexels.com/photos/2132250/pexels-photo-2132250.jpeg?auto=compress&cs=tinysrgb&w=800',
+    badge: 'Featured',
+    title: 'Boost Your Harvest with Modern Tips',
+    articleCount: '12 articles',
+    readCount: '950 reads',
+    image: 'https://images.pexels.com/photos/2132250/pexels-photo-2132250.jpeg?auto=compress&cs=tinysrgb&w=1000',
     color: '#FF9800'
   },
   {
     id: '2',
-    title: 'Govi Mart: Sell Direct',
-    desc: 'Connect with buyers and get the best prices for your produce.',
-    image: 'https://images.pexels.com/photos/2255924/pexels-photo-2255924.jpeg?auto=compress&cs=tinysrgb&w=800',
+    badge: 'Market',
+    title: 'Govi Mart: Sell Direct to Buyers',
+    articleCount: '8 articles',
+    readCount: '2100 reads',
+    image: 'https://images.pexels.com/photos/2255924/pexels-photo-2255924.jpeg?auto=compress&cs=tinysrgb&w=1000',
     color: '#4CAF50'
   },
   {
     id: '3',
-    title: 'Expert Community',
-    desc: 'Join the forum to discuss crop issues with certified agri-officers.',
-    image: 'https://images.pexels.com/photos/4505166/pexels-photo-4505166.jpeg?auto=compress&cs=tinysrgb&w=800',
+    badge: 'Community',
+    title: 'Expert Advice for Every Farmer',
+    articleCount: '25 articles',
+    readCount: '1420 reads',
+    image: 'https://images.pexels.com/photos/4505166/pexels-photo-4505166.jpeg?auto=compress&cs=tinysrgb&w=1000',
     color: '#2196F3'
   },
   {
     id: '4',
-    title: 'Personal Farming',
-    desc: 'Smart gardening tools and AI disease identification for your home crops.',
-    image: 'https://images.pexels.com/photos/5946101/pexels-photo-5946101.jpeg?auto=compress&cs=tinysrgb&w=800',
-    color: '#689F38'
+    badge: 'Smart Assistant',
+    title: 'Get your Personalized Crop suggestions',
+    articleCount: 'Smart Tips',
+    readCount: 'Real-time',
+    image: 'https://images.pexels.com/photos/706140/pexels-photo-706140.jpeg?auto=compress&cs=tinysrgb&w=1000',
+    color: '#8BC34A'
+  },
+  {
+    id: '5',
+    badge: 'Management',
+    title: 'Track Your Farm Activities efficiently',
+    articleCount: 'Daily Logs',
+    readCount: 'Tracker',
+    image: 'https://images.pexels.com/photos/259280/pexels-photo-259280.jpeg?auto=compress&cs=tinysrgb&w=1000',
+    color: '#FF7043'
   }
 ];
 
-const MOCK_BLOGS = [
-  {
-    id: '1',
-    title: 'Cultivating Success: Essential Rice Farming Tips',
-    author: 'Nimal Perera',
-    readTime: '5 min read',
-    image: 'https://images.pexels.com/photos/1459339/pexels-photo-1459339.jpeg?auto=compress&cs=tinysrgb&w=400'
-  },
-  {
-    id: '2',
-    title: 'Organic Pest Control: Natural Solutions for Your Farm',
-    author: 'Sunethra Dias',
-    readTime: 'Oct 26',
-    image: 'https://images.pexels.com/photos/2289163/pexels-photo-2289163.jpeg?auto=compress&cs=tinysrgb&w=400'
-  },
-  {
-    id: '3',
-    title: 'Soil Nutrition: The Key to Sustainable Farming',
-    author: 'Kamal Silva',
-    readTime: '4 min read',
-    image: 'https://images.pexels.com/photos/1105019/pexels-photo-1105019.jpeg?auto=compress&cs=tinysrgb&w=400'
-  }
-];
+
+
+const FILTER_OPTIONS = {
+  cropType: ['All', 'Paddy', 'Vegetable', 'Fruit', 'Grains'],
+  farmingType: ['All', 'Organic', 'Conventional', 'Hydroponics'],
+  season: ['All', 'Maha', 'Yala'],
+  location: ['All', 'Dry Zone', 'Wet Zone', 'Intermediate Zone'],
+  sortBy: ['Newly Uploaded', 'Earlier Uploaded']
+};
 
 const HomeScreen = ({ navigation }) => {
+  const { width: windowWidth } = useWindowDimensions();
+
+  // Calculate carousel dimensions dynamically
+  const ITEM_WIDTH = windowWidth * 0.90;
+  const ITEM_MARGIN = 8;
+  const SNAP_INTERVAL = ITEM_WIDTH + (ITEM_MARGIN * 2);
+  const SIDE_SPACING = (windowWidth - SNAP_INTERVAL) / 2 - ITEM_MARGIN;
+
   const [user, setUser] = useState(null);
+  const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [activeSlide, setActiveSlide] = useState(0);
   const [imageErrors, setImageErrors] = useState({});
   const flatListRef = useRef(null);
 
+  // Filter States
+  const [isFilterVisible, setIsFilterVisible] = useState(false);
+  const [filters, setFilters] = useState({
+    cropType: 'All',
+    farmingType: 'All',
+    season: 'All',
+    location: 'All',
+    sortBy: 'Newly Uploaded'
+  });
+
+  const toggleFilterOption = (category, value) => {
+    setFilters(prev => ({
+      ...prev,
+      [category]: value
+    }));
+  };
+
+  const resetFilters = () => {
+    setFilters({
+      cropType: 'All',
+      farmingType: 'All',
+      season: 'All',
+      location: 'All',
+      sortBy: 'Newly Uploaded'
+    });
+  };
+
+  const applyFilters = () => {
+    setIsFilterVisible(false);
+    fetchLatestBlogs();
+  };
+
+  const renderFilterSection = (title, category, options) => (
+    <View style={styles.filterSection}>
+      <Text style={styles.filterSectionTitle}>{title}</Text>
+      <View style={styles.filterChipContainer}>
+        {options.map((option, index) => (
+          <TouchableOpacity
+            key={index}
+            style={[
+              styles.filterChip,
+              filters[category] === option && styles.filterChipActive
+            ]}
+            onPress={() => toggleFilterOption(category, option)}
+          >
+            <Text
+              style={[
+                styles.filterChipText,
+                filters[category] === option && styles.filterChipTextActive
+              ]}
+            >
+              {option}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    </View>
+  );
+
   useEffect(() => {
     fetchUser();
+    fetchLatestBlogs();
   }, []);
+
+  const fetchLatestBlogs = async () => {
+    try {
+      const q = [];
+      if (filters.cropType !== 'All') q.push(`cropType=${encodeURIComponent(filters.cropType)}`);
+      if (filters.farmingType !== 'All') q.push(`farmingMethod=${encodeURIComponent(filters.farmingType)}`);
+      if (filters.season !== 'All') q.push(`season=${encodeURIComponent(filters.season)}`);
+      if (filters.location !== 'All') q.push(`location=${encodeURIComponent(filters.location)}`);
+      if (filters.sortBy) q.push(`sortBy=${filters.sortBy === 'Earlier Uploaded' ? 'old' : 'new'}`);
+
+      const queryStr = q.length > 0 ? `?${q.join('&')}` : '';
+      const response = await apiClient.get(`/blogs${queryStr}`);
+      setBlogs(response.data.data);
+    } catch (error) {
+      console.log('Failed to fetch blogs', error);
+    }
+  };
+
+  // Auto-scroll Timer: 6 seconds
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (CAROUSEL_DATA.length > 0) {
+        const nextSlide = (activeSlide + 1) % CAROUSEL_DATA.length;
+        flatListRef.current?.scrollToIndex({
+          index: nextSlide,
+          animated: true
+        });
+        // We don't need to manually call setActiveSlide here 
+        // because the onScroll handler will do it when the scroll completes.
+      }
+    }, 6000);
+
+    return () => clearTimeout(timer);
+  }, [activeSlide]);
 
   const fetchUser = async () => {
     try {
@@ -113,16 +214,16 @@ const HomeScreen = ({ navigation }) => {
 
   const getTimeGreeting = () => {
     const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning,';
-    if (hour < 17) return 'Good Afternoon,';
-    return 'Good Evening,';
+    if (hour < 12) return 'Good Morning';
+    if (hour < 17) return 'Good Afternoon';
+    return 'Good Evening';
   };
 
   const renderCarouselItem = ({ item }) => {
     const hasError = imageErrors[item.id];
 
     return (
-      <View style={[styles.carouselItem, { borderColor: item.color }]}>
+      <View style={[styles.carouselItem, { width: ITEM_WIDTH }]}>
         {!hasError ? (
           <Image
             key={item.id}
@@ -136,7 +237,7 @@ const HomeScreen = ({ navigation }) => {
           />
         ) : (
           <LinearGradient
-            colors={item.isSpecial ? ['#2ed598ff', '#1B4332'] : ['#E8F5E9', '#C8E6C9']}
+            colors={['#2ed598', '#1B4332']}
             style={styles.carouselImage}
             start={{ x: 0, y: 0.5 }}
             end={{ x: 1, y: 0.5 }}
@@ -144,49 +245,30 @@ const HomeScreen = ({ navigation }) => {
         )}
 
         <LinearGradient
-          colors={item.isSpecial ? ['rgba(0,0,0,0.05)', 'rgba(0,0,0,0.4)'] : ['transparent', 'rgba(0,0,0,0.7)']}
-          style={[
-            styles.carouselOverlay,
-            item.isSpecial && { justifyContent: 'center', alignItems: 'center', padding: 15 }
-          ]}
+          colors={['transparent', 'rgba(0,0,0,0.2)', 'rgba(0,0,0,0.8)']}
+          style={styles.carouselOverlay}
         >
-          {item.badge && (
-            <View style={styles.specialBadge}>
-              <Ionicons name="leaf" size={12} color="#1B4332" style={{ marginRight: 5 }} />
-              <Text style={styles.specialBadgeText}>{item.badge}</Text>
+          <View style={styles.carouselBadgeContainer}>
+            <View style={styles.carouselBadge}>
+              <Text style={styles.carouselBadgeText}>{item.badge}</Text>
             </View>
-          )}
+          </View>
 
-          {item.highlightTitle ? (
-            <View style={{ alignItems: 'center', marginBottom: 5 }}>
-              <Text style={[styles.carouselTitle, { textAlign: 'center', fontSize: 26, marginBottom: 0, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 }]}>
-                {item.title}
-              </Text>
-              <Text style={[styles.carouselTitle, { color: '#FFB300', textAlign: 'center', fontSize: 32, marginTop: -5, textShadowColor: 'rgba(0,0,0,0.5)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3 }]}>
-                {item.highlightTitle}
-              </Text>
+          <View style={styles.carouselBottomContent}>
+            <View style={styles.carouselMetadataRow}>
+              <Text style={styles.carouselMetadataText}>{item.articleCount}</Text>
+              <Text style={styles.carouselMetadataText}>{item.readCount}</Text>
             </View>
-          ) : (
-            <Text style={[styles.carouselTitle, item.titleColor ? { color: item.titleColor } : {}]}>{item.title}</Text>
-          )}
-
-          <Text style={[styles.carouselDesc, item.isSpecial && { textAlign: 'center', fontSize: 13, color: '#fefefeff', fontWeight: 'bold' }]}>
-            {item.desc}
-          </Text>
-
-          {!item.isSpecial && (
-            <TouchableOpacity style={styles.learnMoreBtn}>
-              <Text style={styles.learnMoreText}>Learn More <Ionicons name="arrow-forward" size={14} color="#fff" /></Text>
-            </TouchableOpacity>
-          )}
+            <Text style={styles.carouselTitleMain}>{item.title}</Text>
+          </View>
         </LinearGradient>
       </View>
     );
   };
 
   const onScroll = (event) => {
-    const slideSize = event.nativeEvent.layoutMeasurement.width;
-    const index = Math.round(event.nativeEvent.contentOffset.x / slideSize);
+    const scrollOffset = event.nativeEvent.contentOffset.x;
+    const index = Math.round(scrollOffset / SNAP_INTERVAL);
     if (index !== activeSlide) {
       setActiveSlide(index);
     }
@@ -199,10 +281,10 @@ const HomeScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar style="dark" />
+    <SafeAreaView style={styles.container} edges={['top', 'left', 'right']}>
+      <StatusBar style="dark" translucent={true} backgroundColor="transparent" />
       <LinearGradient
-        colors={['#2ed598ff', '#d2f39eff', '#c4f48cff']}
+        colors={['#15bf80ff', '#d2f39eff', '#b6f56fff']}
         style={styles.gradientBg}
       >
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -212,34 +294,39 @@ const HomeScreen = ({ navigation }) => {
             <TouchableOpacity onPress={() => navigation.openDrawer()} style={styles.headerIconBtn}>
               <Ionicons name="menu-outline" size={32} color="#1B4332" />
             </TouchableOpacity>
-
             <View style={styles.headerRight}>
-              <TouchableOpacity onPress={() => navigation.navigate('Profile')}>
-                <View style={[styles.profileContainer, { padding: 2, borderRadius: 25 }]}>
-                  <Image
-                    source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
-                    style={{ width: 44, height: 44, borderRadius: 22 }}
-                  />
+              {/* Notification Bell */}
+              <TouchableOpacity
+                style={styles.iconCircleBtn}
+                onPress={() => navigation.navigate('Notifications')}
+              >
+                <Ionicons name="notifications-outline" size={24} color="#1B4332" />
+                <View style={styles.headerBadge}>
+                  <Text style={styles.headerBadgeText}>3</Text>
                 </View>
               </TouchableOpacity>
+
+              {/* NEW Profile Icon */}
+              <TouchableOpacity
+                style={styles.iconCircleBtn}
+                onPress={() => navigation.navigate('Profile')}
+              >
+                <Ionicons name="person-outline" size={24} color="#1B4332" />
+              </TouchableOpacity>
             </View>
+
           </View>
 
           {/* Greeting Section */}
           <View style={styles.greetingContainer}>
             <View style={styles.greetingTexts}>
-              <Text style={styles.greetingTitle}>{getTimeGreeting()}</Text>
-              <Text style={styles.greetingSubtitle}>Welcome to Govi Connect.</Text>
+              {/* Dynamic Name & Emoji added here */}
+              <Text style={styles.greetingTitle}>
+                {getTimeGreeting()}, {user?.name ? user.name.split(' ')[0] : 'Farmer'} 👋
+              </Text>
+              <Text style={styles.greetingSubtitle}>Welcome to Sri Lanka's First Agri-Community Platform</Text>
             </View>
-            <TouchableOpacity 
-              style={styles.notificationBtn} 
-              onPress={() => navigation.navigate('Notifications')}
-            >
-              <Ionicons name="notifications-outline" size={28} color="#1B4332" />
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>3</Text>
-              </View>
-            </TouchableOpacity>
+
           </View>
 
           {/* Carousel Section */}
@@ -250,12 +337,21 @@ const HomeScreen = ({ navigation }) => {
               renderItem={renderCarouselItem}
               keyExtractor={(item) => item.id}
               horizontal
-              pagingEnabled
               showsHorizontalScrollIndicator={false}
               onScroll={onScroll}
-              contentContainerStyle={styles.carouselList}
+              scrollEventThrottle={16}
+              contentContainerStyle={[styles.carouselList, { paddingHorizontal: SIDE_SPACING }]}
+              snapToInterval={SNAP_INTERVAL}
               snapToAlignment="center"
               decelerationRate="fast"
+              //ListHeaderComponent={() => <View style={{ width: SIDE_SPACING }} />}
+              // ListFooterComponent={() => <View style={{ width: SIDE_SPACING }} />}
+              onScrollToIndexFailed={(info) => {
+                const wait = new Promise(resolve => setTimeout(resolve, 500));
+                wait.then(() => {
+                  flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                });
+              }}
             />
             <View style={styles.pagination}>
               {CAROUSEL_DATA.map((_, i) => (
@@ -278,35 +374,64 @@ const HomeScreen = ({ navigation }) => {
               <View style={styles.searchBox}>
                 <Ionicons name="search-outline" size={22} color="#888" />
                 <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search blogs, updates, topics..."
-                  placeholderTextColor="#211f1fff"
+                  style={[styles.searchInput, Platform.OS === 'web' && { outlineStyle: 'none' }]}
+                  placeholder="Search blogs"
+                  placeholderTextColor="#444"
                 />
               </View>
-              <TouchableOpacity style={styles.filterButton}>
+              <TouchableOpacity style={styles.filterButton} onPress={() => setIsFilterVisible(true)}>
+                <Ionicons name="options-outline" size={20} color="#1B4332" />
                 <Text style={styles.filterLabel}>Filter</Text>
-                <Ionicons name="options-outline" size={22} color="#1e1d1dff" />
               </TouchableOpacity>
             </View>
 
             {/* Latest Blogs */}
             <Text style={styles.sectionHeader}>Latest Blogs</Text>
 
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.blogsList}>
-              {MOCK_BLOGS.map((blog) => (
-                <View key={blog.id} style={styles.blogItem}>
-                  <Image source={{ uri: blog.image }} style={styles.blogThumb} />
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              style={styles.blogsList}
+              contentContainerStyle={styles.blogsScrollContent}
+            >
+              {blogs.map((blog) => (
+                <View key={blog._id} style={styles.blogItem}>
+                  {/* Image Container with Floating Badge */}
+                  <View style={styles.imageWrapper}>
+                    <Image source={{ uri: blog.imageUrl }} style={styles.blogThumb} />
+                    <View style={styles.imageBadge}>
+                      <Text style={styles.imageBadgeText}>{blog.cropType}</Text>
+                    </View>
+                  </View>
+
                   <View style={styles.blogDetails}>
                     <Text style={styles.blogTitleText} numberOfLines={2}>{blog.title}</Text>
-                    <Text style={styles.blogMetaText}>By {blog.author} | {blog.readTime}</Text>
+
+                    {/* New Author Row with Avatar */}
+                    <View style={styles.authorRow}>
+
+                      <Text style={styles.blogMetaText} numberOfLines={1}>
+                        {blog.expertId?.name || 'Agri Expert'} • {blog.season}
+                      </Text>
+                    </View>
 
                     <View style={styles.blogActionRow}>
-                      <TouchableOpacity style={styles.readBtn}>
-                        <Text style={styles.readBtnText}>Read More</Text>
+                      {/* Modernized Read Button */}
+                      <TouchableOpacity
+                        style={styles.readBtn}
+                        onPress={() => navigation.navigate('BlogDetail', { blog })}
+                      >
+                        <Text style={styles.readBtnText}>Read Article</Text>
+                        <Ionicons name="arrow-forward" size={16} color="#187a38" style={{ marginLeft: 4 }} />
                       </TouchableOpacity>
+
                       <View style={styles.iconActions}>
-                        <TouchableOpacity style={styles.iconSBtn}><Ionicons name="bookmark-outline" size={22} color="#333" /></TouchableOpacity>
-                        <TouchableOpacity style={styles.iconSBtn}><Ionicons name="share-social-outline" size={22} color="#333" /></TouchableOpacity>
+                        <TouchableOpacity style={styles.iconSBtn}>
+                          <Ionicons name="bookmark-outline" size={22} color="#555" />
+                        </TouchableOpacity>
+                        <TouchableOpacity style={styles.iconSBtn}>
+                          <Ionicons name="share-social-outline" size={22} color="#555" />
+                        </TouchableOpacity>
                       </View>
                     </View>
                   </View>
@@ -318,14 +443,58 @@ const HomeScreen = ({ navigation }) => {
           </View>
         </ScrollView>
       </LinearGradient>
+
+      {/* Filter Modal */}
+      <Modal
+        visible={isFilterVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsFilterVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setIsFilterVisible(false)}
+        >
+          <TouchableOpacity
+            style={styles.filterModalContainer}
+            activeOpacity={1}
+            onPress={(e) => e.stopPropagation()}
+          >
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Filter Blogs</Text>
+              <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
+                <Ionicons name="close" size={26} color="#1B4332" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+              {renderFilterSection('Crop Type', 'cropType', FILTER_OPTIONS.cropType)}
+              {renderFilterSection('Farming Type', 'farmingType', FILTER_OPTIONS.farmingType)}
+              {renderFilterSection('Season', 'season', FILTER_OPTIONS.season)}
+              {renderFilterSection('Location', 'location', FILTER_OPTIONS.location)}
+              {renderFilterSection('Sort By', 'sortBy', FILTER_OPTIONS.sortBy)}
+            </ScrollView>
+
+            <View style={styles.modalBottomActions}>
+              <TouchableOpacity style={styles.resetBtn} onPress={resetFilters}>
+                <Text style={styles.resetBtnText}>Reset</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.applyFilterBtn} onPress={applyFilters}>
+                <Text style={styles.applyFilterBtnText}>Apply Filters</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#ffffff' },
+  container: { flex: 1, backgroundColor: '#15bf80ff' },
   gradientBg: { flex: 1 },
-  centered: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  centered: { flex: 2, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { flexGrow: 1, paddingTop: Platform.OS === 'android' ? 40 : 10 },
 
   headerRow: {
@@ -335,8 +504,29 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     marginBottom: 20,
   },
+  iconCircleBtn: {
+    width: 44,
+    height: 44,
+    backgroundColor: '#bdf0d0ff', // Your original vibrant green
+    borderRadius: 22,             // Half of 44 to make it a perfect circle
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 12,               // Puts breathing room between the two circles
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 10,
+    elevation: 3
+  },
   headerIconBtn: {
-    padding: 5,
+    marginLeft: 12,
+    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.4)',
+    borderRadius: 20,
+    position: 'relative',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.6)',
   },
   headerRight: {
     flexDirection: 'row',
@@ -367,32 +557,59 @@ const styles = StyleSheet.create({
     borderWidth: 3,
     borderColor: '#ffffff'
   },
+  headerNotificationBtn: {
+    marginRight: 16,
+    padding: 8,
+    backgroundColor: 'rgba(255,255,255,0.4)', // Soft transparent background
+    borderRadius: 20,
+    position: 'relative',
+  },
+  headerBadge: {
+    position: 'absolute',
+    top: -2,
+    right: 2,
+    width: 18,
+    height: 18,
+    borderRadius: 9,
+    backgroundColor: '#049033', // Strong green for contrast
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: '#5af492ff', // Matches your gradient background to blend in
+  },
+  headerBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: 'bold'
+  },
   initialsText: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#33691E'
   },
-
+  headerBadgeText: {
+    color: '#ffffff',
+    fontSize: 10,
+    fontWeight: 'bold'
+  },
   greetingContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
     paddingHorizontal: 20,
-    marginBottom: 25,
+    marginBottom: 20, // Slightly reduced since the bell is gone
     alignItems: 'flex-start'
   },
   greetingTexts: {
     flex: 1
   },
   greetingTitle: {
-    fontSize: 30,
-    fontWeight: '625',
+    fontSize: 28, // Slightly reduced to fit the name better
+    fontWeight: '700',
     color: '#0f1b16ff',
     letterSpacing: -0.5
   },
   greetingSubtitle: {
-    fontSize: 16,
-    color: '#010101ff',
-    marginTop: 4,
+    fontSize: 15,
+    color: '#04560eff', // Slightly darker green/grey for better readability
+    marginTop: 6,
     fontWeight: '500'
   },
   notificationBtn: {
@@ -426,27 +643,26 @@ const styles = StyleSheet.create({
   },
 
   carouselSection: {
-    marginBottom: 20,
+    marginBottom: 10,
   },
   carouselList: {
-    paddingHorizontal: 20,
+    paddingVertical: 10,
   },
+
   carouselItem: {
-    width: viewportWidth - 20,
-    height: 200,
+    height: 190,
     borderRadius: 25,
     overflow: 'hidden',
     position: 'relative',
-    marginRight: 10,
-    marginLeft: 10,
-    borderWidth: 1.5,
-    backgroundColor: '#e0e0e0', // Placeholder gray while loading
-    elevation: 8,
+    width: '100%',
+    alignItems: 'center',
+    marginHorizontal: 12,
+    backgroundColor: '#ffffff',
+    elevation: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.2,
-    shadowRadius: 12,
-    readTime: 10,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 15,
   },
   carouselImage: {
     width: '100%',
@@ -455,53 +671,47 @@ const styles = StyleSheet.create({
   },
   carouselOverlay: {
     flex: 1,
-    padding: 25,
-    justifyContent: 'flex-end',
+    padding: 20,
+    justifyContent: 'space-between',
   },
-  carouselTitle: {
-    color: '#ffffff',
-    fontSize: 24,
-    fontWeight: '900',
-    marginBottom: 6,
-    textShadowColor: 'rgba(0, 0, 0, 0.4)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3
+  carouselBadgeContainer: {
+    alignItems: 'flex-start',
   },
-  carouselDesc: {
-    color: 'rgba(255,255,255,0.9)',
-    fontSize: 14,
-    marginBottom: 15,
-    lineHeight: 20,
-    maxWidth: '90%'
-  },
-  learnMoreBtn: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    paddingHorizontal: 18,
-    paddingVertical: 10,
-    borderRadius: 25,
-    alignSelf: 'flex-start',
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.6)'
-  },
-  learnMoreText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: 14
-  },
-  specialBadge: {
-    backgroundColor: '#FFB300',
-    paddingHorizontal: 12,
-    paddingVertical: 4,
+  carouselBadge: {
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 6,
     borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  specialBadgeText: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#1B4332',
-    letterSpacing: 0.5,
+  carouselBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#000000',
+  },
+  carouselBottomContent: {
+    width: '100%',
+  },
+  carouselMetadataRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  carouselMetadataText: {
+    color: '#ffffff',
+    fontSize: 13,
+    fontWeight: '600',
+    opacity: 0.9,
+  },
+  carouselTitleMain: {
+    color: '#ffffff',
+    fontSize: 22,
+    fontWeight: '800',
+    lineHeight: 28,
   },
   pagination: {
     flexDirection: 'row',
@@ -529,12 +739,12 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 40,
     paddingTop: 30,
     paddingHorizontal: 20,
-    minHeight: Dimensions.get('window').height * 0.5,
     elevation: 20,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -10 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.1,
     shadowRadius: 15,
+    zIndex: 20,
   },
   searchRow: {
     flexDirection: 'row',
@@ -545,103 +755,246 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#dddfddff',
-    borderRadius: 15,
+    backgroundColor: '#E8F5E9',
+    borderRadius: 18,
     paddingHorizontal: 15,
-    marginRight: 10,
+    marginRight: 12,
     height: 54,
     borderWidth: 1.5,
-    borderColor: '#E8F1EB'
+    borderColor: '#C8E6C9',
+    overflow: 'hidden'
   },
   searchInput: {
     flex: 1,
+    minWidth: 0,
+    flexShrink: 1,
     marginLeft: 10,
     fontSize: 15,
-    color: '#000000ff',
-    fontWeight: '500'
+    color: '#1B4332',
+    fontWeight: '600'
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#dddfddff',
-    paddingHorizontal: 15,
-    borderRadius: 15,
+    justifyContent: 'center',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 18,
+    borderRadius: 18,
     height: 54,
     borderWidth: 1.5,
-    borderColor: '#919592ff'
+    borderColor: '#C8E6C9'
   },
   filterLabel: {
-    fontWeight: '700',
-    color: '#000000ff',
-    marginRight: 8,
-    fontSize: 15
+    fontWeight: '800',
+    color: '#1B4332',
+    marginLeft: 6,
+    fontSize: 14,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5
   },
 
   sectionHeader: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#18593eff',
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#1B4332',
     marginBottom: 20,
-    letterSpacing: -0.5
+    letterSpacing: -0.5,
+    paddingLeft: 5
   },
   blogsList: {
     marginBottom: 15,
   },
+  blogsScrollContent: {
+    paddingLeft: 5,
+    paddingRight: 20,
+    paddingBottom: 15
+  },
   blogItem: {
-    width: 260,
+    width: 280,
     backgroundColor: '#ffffff',
-    borderRadius: 22,
-    marginRight: 18,
+    borderRadius: 24,
+    marginRight: 16,
     borderWidth: 1,
     borderColor: '#F0F0F0',
     overflow: 'hidden',
     elevation: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+  },
+  imageWrapper: {
+    position: 'relative',
   },
   blogThumb: {
     width: '100%',
-    height: 150,
+    height: 160, // Slightly taller for a better aspect ratio
+  },
+  imageBadge: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  imageBadgeText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#187a38',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   blogDetails: {
     padding: 16,
+    paddingTop: 12,
   },
   blogTitleText: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '800',
-    color: '#222',
-    marginBottom: 8,
+    color: '#1A1A1A',
+    marginBottom: 10,
     lineHeight: 24,
   },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  authorAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    marginRight: 8,
+    backgroundColor: '#E8F5E9',
+  },
   blogMetaText: {
-    fontSize: 12,
+    fontSize: 13,
     color: '#666',
-    marginBottom: 15,
-    fontWeight: '500'
+    //marginBottom: 15,
+    fontWeight: '600',
+    flex: 1,
   },
   blogActionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#F5F5F5', // Subtle divider line
   },
   readBtn: {
-    backgroundColor: '#EEEEEE',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
   },
   readBtnText: {
-    color: '#333',
+    color: '#187a38',
     fontWeight: '800',
-    fontSize: 12
+    fontSize: 14,
   },
   iconActions: {
     flexDirection: 'row',
   },
   iconSBtn: {
-    marginLeft: 12,
+    marginLeft: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  filterModalContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 25,
+    paddingHorizontal: 20,
+    paddingTop: 25,
+    paddingBottom: 25,
+    width: '90%',
+    maxHeight: '80%'
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20
+  },
+  modalTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: '#1B4332'
+  },
+  filterScroll: {
+    paddingBottom: 20
+  },
+  filterSection: {
+    marginBottom: 25
+  },
+  filterSectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#333',
+    marginBottom: 12
+  },
+  filterChipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap'
+  },
+  filterChip: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    backgroundColor: '#f0f0f0',
+    marginRight: 10,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#e0e0e0'
+  },
+  filterChipActive: {
+    backgroundColor: '#1B4332',
+    borderColor: '#1B4332'
+  },
+  filterChipText: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '600'
+  },
+  filterChipTextActive: {
+    color: '#ffffff'
+  },
+  modalBottomActions: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0'
+  },
+  resetBtn: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 15,
+    backgroundColor: '#f0f0f0',
+    marginRight: 10,
+    alignItems: 'center'
+  },
+  resetBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#666'
+  },
+  applyFilterBtn: {
+    flex: 2,
+    paddingVertical: 15,
+    borderRadius: 15,
+    backgroundColor: '#1B4332',
+    alignItems: 'center'
+  },
+  applyFilterBtnText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#ffffff'
   }
 });
 
