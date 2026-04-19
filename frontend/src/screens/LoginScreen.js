@@ -116,15 +116,14 @@ const LoginScreen = ({ navigation }) => {
             </TouchableOpacity>
 
             {/* Links */}
-            <View style={styles.linksContainer}>
-              <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.registerWrap}>
-                <Text style={styles.linkText}>Don't have an account? <Text style={styles.accentText}>Register here</Text></Text>
-              </TouchableOpacity>
 
-              <TouchableOpacity onPress={handleGuestLogin} style={styles.guestWrap}>
-                <Text style={styles.guestText}>Start as Guest</Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity onPress={handleGuestLogin} style={styles.guestButton}>
+              <Text style={styles.guestButtonText}>Continue as Guest</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => navigation.navigate('Register')} style={styles.registerWrap}>
+              <Text style={styles.linkText}>Don't have an account? <Text style={styles.accentText}>Register here</Text></Text>
+            </TouchableOpacity>
 
           </View>
         </View>
@@ -248,7 +247,7 @@ const styles = StyleSheet.create({
     marginTop: 25,
   },
   registerWrap: {
-    marginBottom: 15,
+    marginTop: 20,
   },
   linkText: {
     color: '#fff',
@@ -258,15 +257,20 @@ const styles = StyleSheet.create({
     color: '#95D5B2',
     fontWeight: 'bold',
   },
-  guestWrap: {
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255,255,255,0.4)',
-    paddingBottom: 2,
+  guestButton: {
+    width: '100%',
+    paddingVertical: 15,
+    borderRadius: 15,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255, 255, 255, 0.8)',
+    alignItems: 'center',
+    marginTop: 20,
   },
-  guestText: {
-    color: 'rgba(255,255,255,0.8)',
-    fontSize: 13,
-    fontStyle: 'italic',
+  guestButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   }
 });
 

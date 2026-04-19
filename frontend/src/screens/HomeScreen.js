@@ -12,7 +12,8 @@ import {
   Platform,
   FlatList,
   useWindowDimensions,
-  Modal
+  Modal,
+  TouchableWithoutFeedback
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -85,7 +86,8 @@ const FILTER_OPTIONS = {
   farmingType: ['All', 'Organic', 'Conventional', 'Hydroponics', 'Integrated/Avenue Planting'],
   season: ['All', 'Maha Season', 'Yala Season', 'Rainy Season'],
   location: ['All', 'All Island', 'Western', 'Central', 'Southern', 'Northern', 'Eastern'],
-  sortBy: ['Newly Uploaded', 'Earlier Uploaded']
+  sortBy: ['Newly Uploaded', 'Earlier Uploaded'],
+  savedStatus: ['All Blogs', 'Saved Blogs']
 };
 
 const HomeScreen = ({ navigation }) => {
@@ -113,7 +115,8 @@ const HomeScreen = ({ navigation }) => {
     farmingType: 'All',
     season: 'All',
     location: 'All',
-    sortBy: 'Newly Uploaded'
+    sortBy: 'Newly Uploaded',
+    savedStatus: 'All Blogs'
   });
 
   const toggleFilterOption = (category, value) => {
@@ -129,7 +132,8 @@ const HomeScreen = ({ navigation }) => {
       farmingType: 'All',
       season: 'All',
       location: 'All',
-      sortBy: 'Newly Uploaded'
+      sortBy: 'Newly Uploaded',
+      savedStatus: 'All Blogs'
     });
   };
 
@@ -178,6 +182,10 @@ const HomeScreen = ({ navigation }) => {
       if (filters.season !== 'All') q.push(`season=${encodeURIComponent(filters.season)}`);
       if (filters.location !== 'All') q.push(`location=${encodeURIComponent(filters.location)}`);
       if (filters.sortBy) q.push(`sortBy=${filters.sortBy === 'Earlier Uploaded' ? 'old' : 'new'}`);
+      
+      if (filters.savedStatus === 'Saved Blogs' && user) {
+        q.push(`savedOnly=true&userId=${user._id}`);
+      }
 
       const queryStr = q.length > 0 ? `?${q.join('&')}` : '';
       const response = await apiClient.get(`/blogs${queryStr}`);
@@ -212,6 +220,15 @@ const HomeScreen = ({ navigation }) => {
       console.log('User fetching error or guest mode', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleSaveBlog = async (blogId) => {
+    try {
+      const response = await apiClient.put(`/users/toggle-save-blog/${blogId}`);
+      setUser(prev => ({ ...prev, savedBlogs: response.data.data.savedBlogs }));
+    } catch (error) {
+      console.log('Error toggling save blog:', error);
     }
   };
 
@@ -441,12 +458,18 @@ const HomeScreen = ({ navigation }) => {
                       </TouchableOpacity>
 
                       <View style={styles.iconActions}>
-                        <TouchableOpacity style={styles.iconSBtn}>
-                          <Ionicons name="bookmark-outline" size={22} color="#555" />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.iconSBtn}>
-                          <Ionicons name="share-social-outline" size={22} color="#555" />
-                        </TouchableOpacity>
+                        {userRole !== 'Guest' && (
+                          <TouchableOpacity 
+                            style={styles.iconSBtn}
+                            onPress={() => toggleSaveBlog(blog._id)}
+                          >
+                            <Ionicons 
+                              name={user?.savedBlogs?.includes(blog._id) ? "bookmark" : "bookmark-outline"} 
+                              size={22} 
+                              color={user?.savedBlogs?.includes(blog._id) ? "#187a38" : "#555"} 
+                            />
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   </View>
@@ -466,41 +489,42 @@ const HomeScreen = ({ navigation }) => {
         animationType="fade"
         onRequestClose={() => setIsFilterVisible(false)}
       >
-        <TouchableOpacity
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setIsFilterVisible(false)}
-        >
-          <TouchableOpacity
-            style={styles.filterModalContainer}
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filter Blogs</Text>
-              <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
-                <Ionicons name="close" size={26} color="#1B4332" />
-              </TouchableOpacity>
-            </View>
+        <TouchableWithoutFeedback onPress={() => setIsFilterVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.filterModalContainer}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Filter Blogs</Text>
+                  <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
+                    <Ionicons name="close" size={26} color="#1B4332" />
+                  </TouchableOpacity>
+                </View>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-              {renderFilterSection('Crop Type', 'cropType', FILTER_OPTIONS.cropType)}
-              {renderFilterSection('Farming Type', 'farmingType', FILTER_OPTIONS.farmingType)}
-              {renderFilterSection('Season', 'season', FILTER_OPTIONS.season)}
-              {renderFilterSection('Location', 'location', FILTER_OPTIONS.location)}
-              {renderFilterSection('Sort By', 'sortBy', FILTER_OPTIONS.sortBy)}
-            </ScrollView>
+                <ScrollView 
+                  showsVerticalScrollIndicator={false} 
+                  contentContainerStyle={styles.filterScroll}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {renderFilterSection('Crop Type', 'cropType', FILTER_OPTIONS.cropType)}
+                  {renderFilterSection('Farming Type', 'farmingType', FILTER_OPTIONS.farmingType)}
+                  {renderFilterSection('Season', 'season', FILTER_OPTIONS.season)}
+                  {renderFilterSection('Location', 'location', FILTER_OPTIONS.location)}
+                  {renderFilterSection('Sort By', 'sortBy', FILTER_OPTIONS.sortBy)}
+                  {userRole !== 'Guest' && renderFilterSection('Saved Status', 'savedStatus', FILTER_OPTIONS.savedStatus)}
+                </ScrollView>
 
-            <View style={styles.modalBottomActions}>
-              <TouchableOpacity style={styles.resetBtn} onPress={resetFilters}>
-                <Text style={styles.resetBtnText}>Reset</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.applyFilterBtn} onPress={applyFilters}>
-                <Text style={styles.applyFilterBtnText}>Apply Filters</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
-        </TouchableOpacity>
+                <View style={styles.modalBottomActions}>
+                  <TouchableOpacity style={styles.resetBtn} onPress={resetFilters}>
+                    <Text style={styles.resetBtnText}>Reset</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.applyFilterBtn} onPress={applyFilters}>
+                    <Text style={styles.applyFilterBtnText}>Apply Filters</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
       </Modal>
 
       {/* Login Prompt Modal for Guests */}
@@ -970,46 +994,46 @@ const styles = StyleSheet.create({
   filterModalContainer: {
     backgroundColor: '#ffffff',
     borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingTop: 25,
-    paddingBottom: 25,
-    width: '90%',
-    maxHeight: '80%'
+    paddingHorizontal: 15,
+    paddingTop: 20,
+    paddingBottom: 20,
+    width: '94%',
+    maxHeight: '90%'
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20
+    marginBottom: 12
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#1B4332'
   },
   filterScroll: {
-    paddingBottom: 20
+    paddingBottom: 15
   },
   filterSection: {
-    marginBottom: 25
+    marginBottom: 15
   },
   filterSectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: '#333',
-    marginBottom: 12
+    marginBottom: 8
   },
   filterChipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap'
   },
   filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 20,
     backgroundColor: '#f0f0f0',
-    marginRight: 10,
-    marginBottom: 10,
+    marginRight: 6,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#e0e0e0'
   },
@@ -1018,7 +1042,7 @@ const styles = StyleSheet.create({
     borderColor: '#1B4332'
   },
   filterChipText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
     fontWeight: '600'
   },
@@ -1028,32 +1052,33 @@ const styles = StyleSheet.create({
   modalBottomActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 10,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0'
+    borderTopColor: '#f0f0f0',
+    marginTop: 5
   },
   resetBtn: {
     flex: 1,
-    paddingVertical: 15,
+    paddingVertical: 10,
     borderRadius: 15,
     backgroundColor: '#f0f0f0',
     marginRight: 10,
     alignItems: 'center'
   },
   resetBtnText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#666'
   },
   applyFilterBtn: {
     flex: 2,
-    paddingVertical: 15,
+    paddingVertical: 10,
     borderRadius: 15,
     backgroundColor: '#1B4332',
     alignItems: 'center'
   },
   applyFilterBtnText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#ffffff'
   },
