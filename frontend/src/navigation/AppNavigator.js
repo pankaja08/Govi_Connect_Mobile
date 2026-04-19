@@ -23,6 +23,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import ForumQAScreen from '../screens/ForumQ&AScreen';
 import ForumEditQuestionScreen from '../screens/ForumEditQuestionScreen';
+import ExpertEditAnswerScreen from '../screens/ExpertEditAnswerScreen';
 
 const Stack = createNativeStackNavigator();
 // Navigation refresh trigger
@@ -337,6 +338,7 @@ const AppNavigator = ({ userToken, userRole }) => {
             <Stack.Screen name="ExpertMain" component={ExpertDrawer} />
             <Stack.Screen name="ForumDetail" component={ForumQAScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ForumEditQuestion" component={ForumEditQuestionScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ExpertEditAnswer" component={ExpertEditAnswerScreen} options={{ headerShown: false }} />
           </>
         ) : (
           // MAIN APP STACK (User Drawer + Sub-screens)

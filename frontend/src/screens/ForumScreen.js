@@ -184,7 +184,7 @@ const ExpertQuestionCard = ({ question, currentUserId, onAnswer, onDeleteAnswer,
                   <Text style={styles.ansAuthor}>{ans.authorName} ({ans.authorRole})</Text>
                   {isMyAnswer && (
                     <View style={styles.answerActionBtns}>
-                      <TouchableOpacity onPress={() => onEditAnswer(question._id, ans)} style={{ marginRight: 14 }}>
+                      <TouchableOpacity onPress={() => onEditAnswer(question._id, ans, question.text)} style={{ marginRight: 14 }}>
                         <Ionicons name="create-outline" size={16} color="#1565C0" />
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => onDeleteAnswer(question._id, ans._id)}>
@@ -235,9 +235,6 @@ const ForumScreen = () => {
   const [userRole, setUserRole] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
-  const [editingAnswer, setEditingAnswer] = useState(null);
-  const [editAnswerText, setEditAnswerText] = useState('');
-  const [showEditAnswerModal, setShowEditAnswerModal] = useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -322,33 +319,14 @@ const ForumScreen = () => {
     }
   };
 
-  const handleOpenEditAnswer = (questionId, answer) => {
-    setEditingAnswer({ questionId, answerId: answer._id });
-    setEditAnswerText(answer.text || '');
-    setShowEditAnswerModal(true);
+  const handleOpenEditAnswer = (questionId, answer, questionText) => {
+    navigation.navigate('ExpertEditAnswer', {
+      questionId,
+      answer,
+      questionText: questionText || '',
+    });
   };
 
-  const handleSaveEditedAnswer = async () => {
-    if (!editingAnswer || editAnswerText.trim().length < 5) {
-      Alert.alert('Invalid', 'Answer must be at least 5 characters.');
-      return;
-    }
-    try {
-      const res = await apiClient.patch(
-        `/forum/${editingAnswer.questionId}/answers/${editingAnswer.answerId}`,
-        { text: editAnswerText.trim() }
-      );
-      const updatedQ = res.data.data.question;
-      setQuestions(prev => prev.map(q => q._id === updatedQ._id ? updatedQ : q));
-      setShowEditAnswerModal(false);
-      setEditingAnswer(null);
-      setEditAnswerText('');
-    } catch (err) {
-      console.error('Answer Update Error:', err.response?.data || err.message);
-      if (Platform.OS === 'web') window.alert('Could not update answer.');
-      else Alert.alert('Error', 'Could not update answer.');
-    }
-  };
 
   const handleDeleteQuestion = async (id) => {
     if (Platform.OS === 'web') {
@@ -508,27 +486,6 @@ const ForumScreen = () => {
           <View style={{ height: 100 }} />
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Edit Answer Modal */}
-      <Modal visible={showEditAnswerModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Edit Answer</Text>
-            <TextInput
-              style={styles.editInput}
-              value={editAnswerText}
-              onChangeText={setEditAnswerText}
-              multiline
-            />
-            <TouchableOpacity style={styles.saveBtn} onPress={handleSaveEditedAnswer}>
-              <Text style={styles.saveBtnText}>Save Changes</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setShowEditAnswerModal(false)} style={styles.cancelBtn}>
-              <Text style={styles.cancelBtnText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
 
     </SafeAreaView>
   );
