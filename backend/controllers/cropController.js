@@ -77,6 +77,16 @@ exports.addActivity = async (req, res) => {
       return res.status(404).json({ message: 'No crop found with that ID' });
     }
 
+    const activityDate = new Date(req.body.activityDate || Date.now());
+    const plantedDate = new Date(crop.plantedDate);
+    
+    activityDate.setHours(0, 0, 0, 0);
+    plantedDate.setHours(0, 0, 0, 0);
+
+    if (activityDate.getTime() < plantedDate.getTime()) {
+      return res.status(400).json({ message: 'Activity date cannot be earlier than the planted date.' });
+    }
+
     crop.activities.push(req.body);
     await crop.save();
 

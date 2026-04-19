@@ -168,13 +168,24 @@ const FarmerTrackerScreen = () => {
 
   const handleSaveActivity = async () => {
     if (!newActivityForm.activityName) return showAlert('Error', 'Activity name is required');
+
+    const aDate = new Date(newActivityForm.activityDate || new Date());
+    const pDate = new Date(currentCrop.plantedDate);
+    aDate.setHours(0, 0, 0, 0);
+    pDate.setHours(0, 0, 0, 0);
+
+    if (aDate.getTime() < pDate.getTime()) {
+      return showAlert('Validation Error', 'Activity date cannot be earlier than the planted date.');
+    }
+
     try {
       const res = await apiClient.post(`/farm/crops/${currentCrop._id}/activities`, newActivityForm);
       setCrops(crops.map(c => c._id === currentCrop._id ? res.data.data.crop : c));
       setActivityModalVisible(false);
     } catch (error) {
       console.error(error);
-      showAlert('Error', 'Failed to add activity');
+      const msg = error.response?.data?.message || 'Failed to add activity';
+      showAlert('Error', msg);
     }
   };
 
