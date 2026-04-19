@@ -4,10 +4,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import apiClient from '../api/client';
+import CountUp from '../components/CountUp';
+
 
 const { width } = Dimensions.get('window');
 
-const StatCard = ({ title, value, colors, icon, iconType = 'Ionicons' }) => (
+const StatCard = ({ title, value, colors, icon, iconType = 'Ionicons', delay = 0 }) => (
   <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper}>
     <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.statCard}>
       <View style={styles.cardHeader}>
@@ -24,7 +26,7 @@ const StatCard = ({ title, value, colors, icon, iconType = 'Ionicons' }) => (
       </View>
 
       <View style={styles.cardFooter}>
-        <Text style={styles.statValue}>{value}</Text>
+        <CountUp style={styles.statValue} value={value} delay={delay} />
       </View>
     </LinearGradient>
   </TouchableOpacity>
@@ -90,6 +92,7 @@ const AdminDashboardScreen = ({ navigation }) => {
                 value={stats.totalUsers.toString()}
                 colors={['#ffffffff', '#ffffffff']}
                 icon="people"
+                delay={0}
               />
               <StatCard
                 title="Farmers"
@@ -97,18 +100,21 @@ const AdminDashboardScreen = ({ navigation }) => {
                 colors={['#ffffffff', '#ffffffff']}
                 icon="leaf"
                 iconType="MaterialCommunityIcons"
+                delay={100}
               />
               <StatCard
                 title="Agri Officers"
                 value={stats.agriOfficers.toString()}
                 colors={['#ffffffff', '#ffffffff']}
                 icon="school"
+                delay={200}
               />
               <StatCard
                 title="Pending"
                 value={stats.pendingExperts.toString()}
                 colors={['# ffffffff', '#ffffffff']}
                 icon="time"
+                delay={300}
               />
             </>
           )}
