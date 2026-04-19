@@ -5,6 +5,8 @@ import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-ico
 import { LinearGradient } from 'expo-linear-gradient';
 import apiClient from '../api/client';
 import CountUp from '../components/CountUp';
+import CustomDonutChart from '../components/CustomDonutChart';
+import CustomBarChart from '../components/CustomBarChart';
 
 
 const { width } = Dimensions.get('window');
@@ -37,7 +39,8 @@ const AdminDashboardScreen = ({ navigation }) => {
     totalUsers: 0,
     farmers: 0,
     agriOfficers: 0,
-    pendingExperts: 0
+    pendingExperts: 0,
+    geographicStats: []
   });
   const [loading, setLoading] = useState(true);
 
@@ -132,32 +135,17 @@ const AdminDashboardScreen = ({ navigation }) => {
           {/* User Distribution Fake Chart */}
           <View style={styles.cardLarge}>
             <Text style={styles.cardTitle}>User Distribution</Text>
-            <View style={styles.pieContainer}>
-              <View style={styles.pieOuter}>
-                <View style={styles.pieInner}>
-                  <View style={styles.pieSlice1} />
-                  <View style={styles.pieSlice2} />
-                  <View style={styles.pieSlice3} />
-                </View>
-                <View style={styles.pieHole} />
-              </View>
-            </View>
-            <View style={styles.legendContainer}>
-              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#4CAF50' }]} /><Text style={styles.legendText}>Farmers</Text></View>
-              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#FFB300' }]} /><Text style={styles.legendText}>Agri Officers</Text></View>
-              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#2E7D32' }]} /><Text style={styles.legendText}>Admins</Text></View>
-            </View>
+            <CustomDonutChart 
+              farmers={stats.farmers} 
+              agriOfficers={stats.agriOfficers} 
+              admins={stats.totalUsers - stats.farmers - stats.agriOfficers} 
+            />
           </View>
 
-          {/* Geographical Distribution Fake Chart */}
+          {/* Geographical Distribution dynamic Chart */}
           <View style={styles.cardLarge}>
             <Text style={styles.cardTitle}>Geographical Distribution</Text>
-            <View style={styles.barContainer}>
-              <View style={styles.barItem}><View style={[styles.barFill, { height: '30%' }]} /><Text style={styles.barLabel}>Gam.</Text></View>
-              <View style={styles.barItem}><View style={[styles.barFill, { height: '30%' }]} /><Text style={styles.barLabel}>Amp.</Text></View>
-              <View style={styles.barItem}><View style={[styles.barFill, { height: '30%' }]} /><Text style={styles.barLabel}>Kil.</Text></View>
-              <View style={styles.barItem}><View style={[styles.barFill, { height: '90%' }]} /><Text style={styles.barLabel}>Gam.</Text></View>
-            </View>
+            <CustomBarChart data={stats.geographicStats} />
           </View>
         </View>
 

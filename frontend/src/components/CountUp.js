@@ -21,15 +21,19 @@ const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
  */
 const CountUp = ({ value, duration = 1000, delay = 0, style }) => {
   const count = useSharedValue(0);
+  const prevValue = React.useRef(null);
   const targetValue = typeof value === 'string' ? parseFloat(value) : value;
 
   useEffect(() => {
-    // Reset and animate with delay when value changes
-    count.value = 0;
-    count.value = withDelay(delay, withTiming(targetValue || 0, {
-      duration: duration,
-      easing: Easing.out(Easing.exp), // Provides that premium "settling" feel
-    }));
+    // Only trigger animation if the target value changed and is valid
+    if (targetValue !== prevValue.current && !isNaN(targetValue)) {
+      prevValue.current = targetValue;
+      count.value = 0;
+      count.value = withDelay(delay, withTiming(targetValue, {
+        duration: duration,
+        easing: Easing.out(Easing.exp),
+      }));
+    }
   }, [targetValue, duration, delay]);
 
   const animatedProps = useAnimatedProps(() => {

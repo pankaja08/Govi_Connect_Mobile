@@ -49,13 +49,22 @@ exports.getDashboardStats = async (req, res) => {
     });
     const pendingExperts = await User.countDocuments({ role: 'Expert', status: 'Pending' });
 
+    // Get geographical distribution of Farmers
+    const geographicStats = await User.aggregate([
+      { $match: { role: 'User' } },
+      { $group: { _id: '$district', count: { $sum: 1 } } },
+      { $sort: { count: -1 } },
+      { $limit: 6 } // Top 6 districts
+    ]);
+
     res.status(200).json({
       status: 'success',
       data: {
         totalUsers,
         farmers,
         agriOfficers,
-        pendingExperts
+        pendingExperts,
+        geographicStats
       }
     });
   } catch (err) {
