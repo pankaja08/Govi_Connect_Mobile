@@ -22,17 +22,14 @@ import ExpertDashboardScreen from '../screens/ExpertDashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import ExpertPastBlogsScreen from '../screens/ExpertPastBlogsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
-<<<<<<< HEAD
 import ForumQAScreen from '../screens/ForumQ&AScreen';
 import ForumEditQuestionScreen from '../screens/ForumEditQuestionScreen';
 import ExpertEditAnswerScreen from '../screens/ExpertEditAnswerScreen';
-=======
 import AdminUsersScreen from '../screens/AdminUsersScreen';
 import BlogDetailScreen from '../screens/BlogDetailScreen';
 import AdminExpertRequestsScreen from '../screens/AdminExpertRequestsScreen';
 import ExpertRegistrationPendingScreen from '../screens/ExpertRegistrationPendingScreen';
 import ExpertResubmitScreen from '../screens/ExpertResubmitScreen';
->>>>>>> main
 
 const Stack = createNativeStackNavigator();
 // Navigation refresh trigger
@@ -343,14 +340,6 @@ const AppNavigator = ({ userToken, userRole, userStatus }) => {
           </>
         ) : userRole === 'Expert' ? (
           // EXPERT APP STACK
-<<<<<<< HEAD
-          <>
-            <Stack.Screen name="ExpertMain" component={ExpertDrawer} />
-            <Stack.Screen name="ForumDetail" component={ForumQAScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ForumEditQuestion" component={ForumEditQuestionScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="ExpertEditAnswer" component={ExpertEditAnswerScreen} options={{ headerShown: false }} />
-          </>
-=======
           userStatus === 'Pending' ? (
             <>
               <Stack.Screen name="ExpertPending" component={ExpertRegistrationPendingScreen} />
@@ -363,19 +352,18 @@ const AppNavigator = ({ userToken, userRole, userStatus }) => {
             <>
               <Stack.Screen name="ExpertMain" component={ExpertDrawer} />
               <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
+              <Stack.Screen name="ForumDetail" component={ForumQAScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="ForumEditQuestion" component={ForumEditQuestionScreen} options={{ headerShown: false }} />
+              <Stack.Screen name="ExpertEditAnswer" component={ExpertEditAnswerScreen} options={{ headerShown: false }} />
             </>
           )
->>>>>>> main
         ) : (
           // MAIN APP STACK (User Drawer + Sub-screens)
           <>
             <Stack.Screen name="Main" component={MainDrawer} />
-<<<<<<< HEAD
+            <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
             <Stack.Screen name="ForumDetail" component={ForumQAScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ForumEditQuestion" component={ForumEditQuestionScreen} options={{ headerShown: false }} />
-=======
-            <Stack.Screen name="BlogDetail" component={BlogDetailScreen} />
->>>>>>> main
             <Stack.Screen 
               name="Activities" 
               component={ActivityScreen} 

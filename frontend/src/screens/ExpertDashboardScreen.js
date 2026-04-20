@@ -10,14 +10,10 @@ import {
   FlatList,
   Platform,
   Dimensions,
-<<<<<<< HEAD
-  ActivityIndicator,
-  Alert
-=======
   Image,
   ActivityIndicator,
-  KeyboardAvoidingView
->>>>>>> main
+  KeyboardAvoidingView,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -30,14 +26,9 @@ const { width } = Dimensions.get('window');
 
 const DROPDOWNS = {
   locations: ['All Island', 'Western', 'Central', 'Southern', 'Northern', 'Eastern'],
-<<<<<<< HEAD
-  seasons: ['Any Season', 'Maha Season', 'Yala Season'],
-  crops: ['Any Crop', 'Paddy', 'Vegetables', 'Fruits', 'Export Crops']
-=======
   seasons: ['Any Season', 'Maha Season', 'Yala Season', 'Rainy Season'],
   crops: ['Any Crop', 'Paddy', 'Vegetables', 'Fruits', 'Export Crops', 'Plantation Crop'],
   methods: ['Any Method', 'Organic', 'Conventional', 'Hydroponics', 'Integrated/Avenue Planting']
->>>>>>> main
 };
 
 const SearchablePicker = ({ label, value, options, onSelect, placeholder }) => {
@@ -90,11 +81,7 @@ const SearchablePicker = ({ label, value, options, onSelect, placeholder }) => {
 
 const ExpertDashboardScreen = ({ navigation, route }) => {
   const [user, setUser] = useState(null);
-<<<<<<< HEAD
-=======
   const editData = route?.params?.editData;
-
->>>>>>> main
   const [formData, setFormData] = useState({
     title: '',
     content: '',
@@ -279,62 +266,6 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-<<<<<<< HEAD
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        <View style={styles.topHeader}>
-          <TouchableOpacity onPress={() => navigation.openDrawer()}>
-            <Ionicons name="menu" size={30} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.topHeaderTitle}>EXPERT PORTAL</Text>
-        </View>
-
-        <View style={styles.bannerContainer}>
-          <LinearGradient colors={['#1B5E20', '#2E7D32']} style={styles.welcomeBanner}>
-            <Text style={styles.welcomeSmall}>WELCOME BACK</Text>
-            <Text style={styles.welcomeTitle}>Hello, {user?.name || 'Expert'}!</Text>
-            <Text style={styles.welcomeInfo}>
-              Share your agricultural expertise with Sri Lankan farmers through insightful blog posts.
-            </Text>
-          </LinearGradient>
-        </View>
-
-        <View style={styles.contentSection}>
-          <Text style={styles.pageTitle}>Write a New Blog Post</Text>
-          <Text style={styles.pageSubtitle}>Share your knowledge and help farmers learn better farming practices.</Text>
-
-          <View style={styles.formCard}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Article Title <Text style={{ color: 'red' }}>*</Text></Text>
-              <TextInput
-                style={styles.textInput}
-                placeholder="E.g., Tips for high-yield organic farming"
-                value={formData.title}
-                onChangeText={(text) => updateField('title', text)}
-              />
-            </View>
-
-            <View style={styles.row}>
-              <SearchablePicker label="Location" value={formData.location} options={DROPDOWNS.locations} onSelect={(value) => updateField('location', value)} />
-              <View style={{ width: 15 }} />
-              <SearchablePicker label="Season" value={formData.season} options={DROPDOWNS.seasons} onSelect={(value) => updateField('season', value)} />
-            </View>
-
-            <View style={styles.row}>
-              <SearchablePicker label="Crop" value={formData.cropType} options={DROPDOWNS.crops} onSelect={(value) => updateField('cropType', value)} />
-            </View>
-
-            <TouchableOpacity style={styles.imageUploadBox}>
-              <Ionicons name="cloud-upload-outline" size={32} color="#2E7D32" />
-              <Text style={styles.uploadText}>Upload Cover Image</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.publishBtn} onPress={handlePublishBlog}>
-              <Text style={styles.publishBtnText}>Publish Blog Post</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </ScrollView>
-=======
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : null}>
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
 
@@ -480,25 +411,13 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
           <View style={{ height: 40 }} />
         </ScrollView>
       </KeyboardAvoidingView>
->>>>>>> main
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-<<<<<<< HEAD
-  safeArea: { flex: 1, backgroundColor: '#f8faf9' },
-  scrollContent: { flexGrow: 1 },
-  topHeader: {
-    height: Platform.OS === 'android' ? 90 : 60,
-    backgroundColor: '#2E7D32',
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: Platform.OS === 'android' ? 30 : 0
-=======
   safeArea: { flex: 1, backgroundColor: '#f2f7f4' },
-  scrollContent: {},
+  scrollContent: { flexGrow: 1 },
 
   headerContainer: {
     backgroundColor: '#1F9A4E',
@@ -621,7 +540,6 @@ const styles = StyleSheet.create({
     borderColor: '#e0e0e0',
     paddingHorizontal: 15,
     paddingVertical: 14
->>>>>>> main
   },
   topHeaderTitle: { color: '#F5A623', fontWeight: 'bold', fontSize: 14, marginLeft: 15, letterSpacing: 1 },
   bannerContainer: { padding: 16, backgroundColor: '#2E7D32', borderBottomLeftRadius: 30, borderBottomRightRadius: 30, paddingBottom: 25 },
@@ -649,9 +567,6 @@ const styles = StyleSheet.create({
   modalTitle: { fontSize: 18, fontWeight: 'bold' },
   optionItem: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#eee', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   optionText: { fontSize: 15, color: '#333' },
-<<<<<<< HEAD
-=======
-
   errorText: {
     color: 'red',
     fontSize: 12,
@@ -714,7 +629,6 @@ const styles = StyleSheet.create({
     elevation: 0,
     shadowOpacity: 0
   }
->>>>>>> main
 });
 
 export default ExpertDashboardScreen;

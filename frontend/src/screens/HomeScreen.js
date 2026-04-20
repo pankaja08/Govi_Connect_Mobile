@@ -358,26 +358,13 @@ const HomeScreen = ({ navigation }) => {
           {/* Greeting Section */}
           <View style={styles.greetingContainer}>
             <View style={styles.greetingTexts}>
-              {/* Dynamic Name & Emoji added here */}
-              <Text style={styles.greetingTitle}>
-                {getTimeGreeting()}, {user?.name ? user.name.split(' ')[0] : 'Farmer'} 👋
-              </Text>
-              <Text style={styles.greetingSubtitle}>Welcome to Sri Lanka's First Agri-Community Platform</Text>
-            </View>
-<<<<<<< HEAD
-            <TouchableOpacity
-              style={styles.notificationBtn}
-              onPress={() => navigation.navigate('Notifications')}
-            >
-              <Ionicons name="notifications-outline" size={28} color="#1B4332" />
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>3</Text>
-              </View>
-            </TouchableOpacity>
-=======
-
->>>>>>> main
-          </View>
+               {/* Dynamic Name & Emoji added here */}
+               <Text style={styles.greetingTitle}>
+                 {getTimeGreeting()}, {user?.name ? user.name.split(' ')[0] : 'Farmer'} 👋
+               </Text>
+               <Text style={styles.greetingSubtitle}>Welcome to Sri Lanka's First Agri-Community Platform</Text>
+             </View>
+           </View>
 
           {/* Carousel Section */}
           <View style={styles.carouselSection}>
