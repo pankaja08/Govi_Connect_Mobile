@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import {
   View,
   Text,
@@ -12,13 +12,16 @@ import {
   Platform,
   FlatList,
   useWindowDimensions,
-  Modal
+  Modal,
+  TouchableWithoutFeedback,
+  Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import apiClient from '../api/client';
+import { AuthContext } from '../context/AuthContext';
 
 const CAROUSEL_DATA = [
   {
@@ -80,15 +83,18 @@ const CAROUSEL_DATA = [
 
 
 const FILTER_OPTIONS = {
-  cropType: ['All', 'Paddy', 'Vegetable', 'Fruit', 'Grains'],
-  farmingType: ['All', 'Organic', 'Conventional', 'Hydroponics'],
-  season: ['All', 'Maha', 'Yala'],
-  location: ['All', 'Dry Zone', 'Wet Zone', 'Intermediate Zone'],
-  sortBy: ['Newly Uploaded', 'Earlier Uploaded']
+  cropType: ['All', 'Paddy', 'Vegetables', 'Fruits', 'Export Crops', "Plantation Crop"],
+  farmingType: ['All', 'Organic', 'Conventional', 'Hydroponics', 'Integrated/Avenue Planting'],
+  season: ['All', 'Maha Season', 'Yala Season', 'Rainy Season'],
+  location: ['All', 'All Island', 'Western', 'Central', 'Southern', 'Northern', 'Eastern'],
+  sortBy: ['Newly Uploaded', 'Earlier Uploaded'],
+  savedStatus: ['All Blogs', 'Saved Blogs']
 };
 
 const HomeScreen = ({ navigation }) => {
   const { width: windowWidth } = useWindowDimensions();
+  const { userRole, signOut } = useContext(AuthContext);
+  const [isLoginPromptVisible, setIsLoginPromptVisible] = useState(false);
 
   // Calculate carousel dimensions dynamically
   const ITEM_WIDTH = windowWidth * 0.90;
@@ -101,6 +107,7 @@ const HomeScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [activeSlide, setActiveSlide] = useState(0);
   const [imageErrors, setImageErrors] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
   const flatListRef = useRef(null);
 
   // Filter States
@@ -110,7 +117,8 @@ const HomeScreen = ({ navigation }) => {
     farmingType: 'All',
     season: 'All',
     location: 'All',
-    sortBy: 'Newly Uploaded'
+    sortBy: 'Newly Uploaded',
+    savedStatus: 'All Blogs'
   });
 
   const toggleFilterOption = (category, value) => {
@@ -126,7 +134,8 @@ const HomeScreen = ({ navigation }) => {
       farmingType: 'All',
       season: 'All',
       location: 'All',
-      sortBy: 'Newly Uploaded'
+      sortBy: 'Newly Uploaded',
+      savedStatus: 'All Blogs'
     });
   };
 
@@ -176,6 +185,14 @@ const HomeScreen = ({ navigation }) => {
       if (filters.location !== 'All') q.push(`location=${encodeURIComponent(filters.location)}`);
       if (filters.sortBy) q.push(`sortBy=${filters.sortBy === 'Earlier Uploaded' ? 'old' : 'new'}`);
 
+      if (filters.savedStatus === 'Saved Blogs' && user) {
+        q.push(`savedOnly=true&userId=${user._id}`);
+      }
+
+      if (searchQuery && searchQuery.trim() !== '') {
+        q.push(`search=${encodeURIComponent(searchQuery.trim())}`);
+      }
+
       const queryStr = q.length > 0 ? `?${q.join('&')}` : '';
       const response = await apiClient.get(`/blogs${queryStr}`);
       setBlogs(response.data.data);
@@ -209,6 +226,15 @@ const HomeScreen = ({ navigation }) => {
       console.log('User fetching error or guest mode', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleSaveBlog = async (blogId) => {
+    try {
+      const response = await apiClient.put(`/users/toggle-save-blog/${blogId}`);
+      setUser(prev => ({ ...prev, savedBlogs: response.data.data.savedBlogs }));
+    } catch (error) {
+      console.log('Error toggling save blog:', error);
     }
   };
 
@@ -287,7 +313,7 @@ const HomeScreen = ({ navigation }) => {
         colors={['#15bf80ff', '#d2f39eff', '#b6f56fff']}
         style={styles.gradientBg}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
           {/* Custom Header */}
           <View style={styles.headerRow}>
@@ -298,7 +324,13 @@ const HomeScreen = ({ navigation }) => {
               {/* Notification Bell */}
               <TouchableOpacity
                 style={styles.iconCircleBtn}
-                onPress={() => navigation.navigate('Notifications')}
+                onPress={() => {
+                  if (userRole === 'Guest') {
+                    setIsLoginPromptVisible(true);
+                  } else {
+                    navigation.navigate('Notifications');
+                  }
+                }}
               >
                 <Ionicons name="notifications-outline" size={24} color="#1B4332" />
                 <View style={styles.headerBadge}>
@@ -309,7 +341,13 @@ const HomeScreen = ({ navigation }) => {
               {/* NEW Profile Icon */}
               <TouchableOpacity
                 style={styles.iconCircleBtn}
-                onPress={() => navigation.navigate('Profile')}
+                onPress={() => {
+                  if (userRole === 'Guest') {
+                    setIsLoginPromptVisible(true);
+                  } else {
+                    navigation.navigate('Profile');
+                  }
+                }}
               >
                 <Ionicons name="person-outline" size={24} color="#1B4332" />
               </TouchableOpacity>
@@ -377,7 +415,22 @@ const HomeScreen = ({ navigation }) => {
                   style={[styles.searchInput, Platform.OS === 'web' && { outlineStyle: 'none' }]}
                   placeholder="Search blogs"
                   placeholderTextColor="#444"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={fetchLatestBlogs}
+                  returnKeyType="search"
                 />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      fetchLatestBlogs();
+                    }}
+                    style={{ marginLeft: 8 }}
+                  >
+                    <Ionicons name="search-circle" size={32} color="#187a38" />
+                  </TouchableOpacity>
+                )}
               </View>
               <TouchableOpacity style={styles.filterButton} onPress={() => setIsFilterVisible(true)}>
                 <Ionicons name="options-outline" size={20} color="#1B4332" />
@@ -426,12 +479,18 @@ const HomeScreen = ({ navigation }) => {
                       </TouchableOpacity>
 
                       <View style={styles.iconActions}>
-                        <TouchableOpacity style={styles.iconSBtn}>
-                          <Ionicons name="bookmark-outline" size={22} color="#555" />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.iconSBtn}>
-                          <Ionicons name="share-social-outline" size={22} color="#555" />
-                        </TouchableOpacity>
+                        {userRole !== 'Guest' && (
+                          <TouchableOpacity
+                            style={styles.iconSBtn}
+                            onPress={() => toggleSaveBlog(blog._id)}
+                          >
+                            <Ionicons
+                              name={user?.savedBlogs?.includes(blog._id) ? "bookmark" : "bookmark-outline"}
+                              size={22}
+                              color={user?.savedBlogs?.includes(blog._id) ? "#187a38" : "#555"}
+                            />
+                          </TouchableOpacity>
+                        )}
                       </View>
                     </View>
                   </View>
@@ -451,40 +510,87 @@ const HomeScreen = ({ navigation }) => {
         animationType="fade"
         onRequestClose={() => setIsFilterVisible(false)}
       >
+        <TouchableWithoutFeedback onPress={() => setIsFilterVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.filterModalContainer}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Filter Blogs</Text>
+                  <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
+                    <Ionicons name="close" size={26} color="#1B4332" />
+                  </TouchableOpacity>
+                </View>
+
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.filterScroll}
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {renderFilterSection('Crop Type', 'cropType', FILTER_OPTIONS.cropType)}
+                  {renderFilterSection('Farming Type', 'farmingType', FILTER_OPTIONS.farmingType)}
+                  {renderFilterSection('Season', 'season', FILTER_OPTIONS.season)}
+                  {renderFilterSection('Location', 'location', FILTER_OPTIONS.location)}
+                  {renderFilterSection('Sort By', 'sortBy', FILTER_OPTIONS.sortBy)}
+                  {userRole !== 'Guest' && renderFilterSection('Saved Status', 'savedStatus', FILTER_OPTIONS.savedStatus)}
+                </ScrollView>
+
+                <View style={styles.modalBottomActions}>
+                  <TouchableOpacity style={styles.resetBtn} onPress={resetFilters}>
+                    <Text style={styles.resetBtnText}>Reset</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.applyFilterBtn} onPress={applyFilters}>
+                    <Text style={styles.applyFilterBtnText}>Apply Filters</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+
+      {/* Login Prompt Modal for Guests */}
+      <Modal
+        visible={isLoginPromptVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setIsLoginPromptVisible(false)}
+      >
         <TouchableOpacity
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setIsFilterVisible(false)}
+          onPress={() => setIsLoginPromptVisible(false)}
         >
-          <TouchableOpacity
-            style={styles.filterModalContainer}
-            activeOpacity={1}
-            onPress={(e) => e.stopPropagation()}
-          >
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Filter Blogs</Text>
-              <TouchableOpacity onPress={() => setIsFilterVisible(false)}>
-                <Ionicons name="close" size={26} color="#1B4332" />
-              </TouchableOpacity>
-            </View>
+          <View style={styles.promptModalContainer}>
+            <LinearGradient
+              colors={['#1B4332', '#2E7D32']}
+              style={styles.promptGradient}
+            >
+              <View style={styles.promptIconContainer}>
+                <Ionicons name="lock-closed" size={50} color="#ffffff" />
+              </View>
+              <Text style={styles.promptTitle}>Unlock the Full Experience!</Text>
+              <Text style={styles.promptSubtitle}>
+                Join Govi Connect today to access personalized features, community discussions, and expert insights.
+              </Text>
 
-            <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-              {renderFilterSection('Crop Type', 'cropType', FILTER_OPTIONS.cropType)}
-              {renderFilterSection('Farming Type', 'farmingType', FILTER_OPTIONS.farmingType)}
-              {renderFilterSection('Season', 'season', FILTER_OPTIONS.season)}
-              {renderFilterSection('Location', 'location', FILTER_OPTIONS.location)}
-              {renderFilterSection('Sort By', 'sortBy', FILTER_OPTIONS.sortBy)}
-            </ScrollView>
+              <TouchableOpacity
+                style={[styles.promptLoginBtn, { marginBottom: 12 }]}
+                onPress={async () => {
+                  setIsLoginPromptVisible(false);
+                  await signOut();
+                }}
+              >
+                <Text style={styles.promptLoginBtnText}>Login / Register Now</Text>
+              </TouchableOpacity>
 
-            <View style={styles.modalBottomActions}>
-              <TouchableOpacity style={styles.resetBtn} onPress={resetFilters}>
-                <Text style={styles.resetBtnText}>Reset</Text>
+              <TouchableOpacity
+                style={styles.promptLaterBtn}
+                onPress={() => setIsLoginPromptVisible(false)}
+              >
+                <Text style={styles.promptLaterBtnText}>Maybe Later</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.applyFilterBtn} onPress={applyFilters}>
-                <Text style={styles.applyFilterBtnText}>Apply Filters</Text>
-              </TouchableOpacity>
-            </View>
-          </TouchableOpacity>
+            </LinearGradient>
+          </View>
         </TouchableOpacity>
       </Modal>
     </SafeAreaView>
@@ -909,46 +1015,46 @@ const styles = StyleSheet.create({
   filterModalContainer: {
     backgroundColor: '#ffffff',
     borderRadius: 25,
-    paddingHorizontal: 20,
-    paddingTop: 25,
-    paddingBottom: 25,
-    width: '90%',
-    maxHeight: '80%'
+    paddingHorizontal: 15,
+    paddingTop: 20,
+    paddingBottom: 20,
+    width: '94%',
+    maxHeight: '90%'
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20
+    marginBottom: 12
   },
   modalTitle: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '800',
     color: '#1B4332'
   },
   filterScroll: {
-    paddingBottom: 20
+    paddingBottom: 15
   },
   filterSection: {
-    marginBottom: 25
+    marginBottom: 15
   },
   filterSectionTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '700',
     color: '#333',
-    marginBottom: 12
+    marginBottom: 8
   },
   filterChipContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap'
   },
   filterChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
     borderRadius: 20,
     backgroundColor: '#f0f0f0',
-    marginRight: 10,
-    marginBottom: 10,
+    marginRight: 6,
+    marginBottom: 6,
     borderWidth: 1,
     borderColor: '#e0e0e0'
   },
@@ -957,7 +1063,7 @@ const styles = StyleSheet.create({
     borderColor: '#1B4332'
   },
   filterChipText: {
-    fontSize: 14,
+    fontSize: 12,
     color: '#666',
     fontWeight: '600'
   },
@@ -967,34 +1073,97 @@ const styles = StyleSheet.create({
   modalBottomActions: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 10,
+    paddingTop: 8,
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0'
+    borderTopColor: '#f0f0f0',
+    marginTop: 5
   },
   resetBtn: {
     flex: 1,
-    paddingVertical: 15,
+    paddingVertical: 10,
     borderRadius: 15,
     backgroundColor: '#f0f0f0',
     marginRight: 10,
     alignItems: 'center'
   },
   resetBtnText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#666'
   },
   applyFilterBtn: {
     flex: 2,
-    paddingVertical: 15,
+    paddingVertical: 10,
     borderRadius: 15,
     backgroundColor: '#1B4332',
     alignItems: 'center'
   },
   applyFilterBtnText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '700',
     color: '#ffffff'
+  },
+  promptModalContainer: {
+    width: '85%',
+    borderRadius: 30,
+    overflow: 'hidden',
+    elevation: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.3,
+    shadowRadius: 20,
+  },
+  promptGradient: {
+    padding: 30,
+    alignItems: 'center',
+  },
+  promptIconContainer: {
+    width: 90,
+    height: 90,
+    borderRadius: 45,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  promptTitle: {
+    fontSize: 24,
+    fontWeight: '800',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  promptSubtitle: {
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: 30,
+  },
+  promptLoginBtn: {
+    width: '100%',
+    backgroundColor: '#ffffff',
+    paddingVertical: 16,
+    borderRadius: 15,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  promptLoginBtnText: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#1B4332',
+  },
+  promptLaterBtn: {
+    paddingVertical: 10,
+  },
+  promptLaterBtnText: {
+    fontSize: 14,
+    color: 'rgba(255, 255, 255, 0.8)',
+    fontWeight: '600',
   }
 });
 
