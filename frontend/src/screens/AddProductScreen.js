@@ -147,17 +147,6 @@ const AddProductScreen = ({ route, navigation }) => {
       </View>
 
       <View style={styles.form}>
-        {/* Approval Banner */}
-        <View style={styles.infoBanner}>
-          <Ionicons name="information-circle-outline" size={20} color="#1565C0" />
-          <View style={{ flex: 1, marginLeft: 10 }}>
-            <Text style={styles.infoBannerTitle}>Approval Required</Text>
-            <Text style={styles.infoBannerText}>
-              Your product listing will be reviewed by an administrator before it appears on Govi Mart. You will receive a notification once approved.
-            </Text>
-          </View>
-        </View>
-
         {/* Product Name */}
         <View style={styles.field}>
           <Text style={styles.label}>Product Name <Text style={styles.required}>*</Text></Text>
@@ -279,10 +268,6 @@ const styles = StyleSheet.create({
   headerTitle: { fontSize: 20, fontWeight: '800', color: '#1A1A1A' },
 
   form: { padding: 16 },
-
-  infoBanner: { flexDirection: 'row', backgroundColor: '#E3F2FD', borderRadius: 12, padding: 14, marginBottom: 20, borderWidth: 1, borderColor: '#90CAF9', alignItems: 'flex-start' },
-  infoBannerTitle: { fontSize: 14, fontWeight: '700', color: '#1565C0', marginBottom: 4 },
-  infoBannerText: { fontSize: 13, color: '#1976D2', lineHeight: 20 },
 
   field: { marginBottom: 18 },
   label: { fontSize: 14, fontWeight: '700', color: '#333', marginBottom: 8 },
