@@ -95,13 +95,34 @@ exports.getMyBlogs = async (req, res) => {
 // Get all blogs (Public feed)
 exports.getAllBlogs = async (req, res) => {
   try {
-    const { cropType, farmingMethod, season, location, sortBy } = req.query;
+    const { cropType, farmingMethod, season, location, sortBy, savedOnly, userId, search } = req.query;
 
     const filter = {};
     if (cropType) filter.cropType = cropType;
     if (farmingMethod) filter.farmingMethod = farmingMethod;
     if (season) filter.season = season;
     if (location) filter.location = location;
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    if (savedOnly === 'true' && userId) {
+      const User = require('../models/User');
+      const user = await User.findById(userId);
+      if (user && user.savedBlogs && user.savedBlogs.length > 0) {
+        filter._id = { $in: user.savedBlogs };
+      } else if (user && (!user.savedBlogs || user.savedBlogs.length === 0)) {
+        return res.status(200).json({
+          success: true,
+          count: 0,
+          data: []
+        });
+      }
+    }
 
     let sortObj = { createdAt: -1 };
     if (sortBy === 'old') {

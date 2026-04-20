@@ -13,7 +13,8 @@ import {
   FlatList,
   useWindowDimensions,
   Modal,
-  TouchableWithoutFeedback
+  TouchableWithoutFeedback,
+  Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -106,6 +107,7 @@ const HomeScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [activeSlide, setActiveSlide] = useState(0);
   const [imageErrors, setImageErrors] = useState({});
+  const [searchQuery, setSearchQuery] = useState('');
   const flatListRef = useRef(null);
 
   // Filter States
@@ -182,9 +184,13 @@ const HomeScreen = ({ navigation }) => {
       if (filters.season !== 'All') q.push(`season=${encodeURIComponent(filters.season)}`);
       if (filters.location !== 'All') q.push(`location=${encodeURIComponent(filters.location)}`);
       if (filters.sortBy) q.push(`sortBy=${filters.sortBy === 'Earlier Uploaded' ? 'old' : 'new'}`);
-      
+
       if (filters.savedStatus === 'Saved Blogs' && user) {
         q.push(`savedOnly=true&userId=${user._id}`);
+      }
+
+      if (searchQuery && searchQuery.trim() !== '') {
+        q.push(`search=${encodeURIComponent(searchQuery.trim())}`);
       }
 
       const queryStr = q.length > 0 ? `?${q.join('&')}` : '';
@@ -307,7 +313,7 @@ const HomeScreen = ({ navigation }) => {
         colors={['#15bf80ff', '#d2f39eff', '#b6f56fff']}
         style={styles.gradientBg}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
 
           {/* Custom Header */}
           <View style={styles.headerRow}>
@@ -409,7 +415,22 @@ const HomeScreen = ({ navigation }) => {
                   style={[styles.searchInput, Platform.OS === 'web' && { outlineStyle: 'none' }]}
                   placeholder="Search blogs"
                   placeholderTextColor="#444"
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                  onSubmitEditing={fetchLatestBlogs}
+                  returnKeyType="search"
                 />
+                {searchQuery.length > 0 && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      Keyboard.dismiss();
+                      fetchLatestBlogs();
+                    }}
+                    style={{ marginLeft: 8 }}
+                  >
+                    <Ionicons name="search-circle" size={32} color="#187a38" />
+                  </TouchableOpacity>
+                )}
               </View>
               <TouchableOpacity style={styles.filterButton} onPress={() => setIsFilterVisible(true)}>
                 <Ionicons name="options-outline" size={20} color="#1B4332" />
@@ -459,14 +480,14 @@ const HomeScreen = ({ navigation }) => {
 
                       <View style={styles.iconActions}>
                         {userRole !== 'Guest' && (
-                          <TouchableOpacity 
+                          <TouchableOpacity
                             style={styles.iconSBtn}
                             onPress={() => toggleSaveBlog(blog._id)}
                           >
-                            <Ionicons 
-                              name={user?.savedBlogs?.includes(blog._id) ? "bookmark" : "bookmark-outline"} 
-                              size={22} 
-                              color={user?.savedBlogs?.includes(blog._id) ? "#187a38" : "#555"} 
+                            <Ionicons
+                              name={user?.savedBlogs?.includes(blog._id) ? "bookmark" : "bookmark-outline"}
+                              size={22}
+                              color={user?.savedBlogs?.includes(blog._id) ? "#187a38" : "#555"}
                             />
                           </TouchableOpacity>
                         )}
@@ -500,8 +521,8 @@ const HomeScreen = ({ navigation }) => {
                   </TouchableOpacity>
                 </View>
 
-                <ScrollView 
-                  showsVerticalScrollIndicator={false} 
+                <ScrollView
+                  showsVerticalScrollIndicator={false}
                   contentContainerStyle={styles.filterScroll}
                   keyboardShouldPersistTaps="handled"
                 >
@@ -534,9 +555,9 @@ const HomeScreen = ({ navigation }) => {
         animationType="fade"
         onRequestClose={() => setIsLoginPromptVisible(false)}
       >
-        <TouchableOpacity 
-          style={styles.modalOverlay} 
-          activeOpacity={1} 
+        <TouchableOpacity
+          style={styles.modalOverlay}
+          activeOpacity={1}
           onPress={() => setIsLoginPromptVisible(false)}
         >
           <View style={styles.promptModalContainer}>
@@ -551,9 +572,9 @@ const HomeScreen = ({ navigation }) => {
               <Text style={styles.promptSubtitle}>
                 Join Govi Connect today to access personalized features, community discussions, and expert insights.
               </Text>
-              
-              <TouchableOpacity 
-                style={[styles.promptLoginBtn, {marginBottom: 12 }]} 
+
+              <TouchableOpacity
+                style={[styles.promptLoginBtn, { marginBottom: 12 }]}
                 onPress={async () => {
                   setIsLoginPromptVisible(false);
                   await signOut();
@@ -561,9 +582,9 @@ const HomeScreen = ({ navigation }) => {
               >
                 <Text style={styles.promptLoginBtnText}>Login / Register Now</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
-                style={styles.promptLaterBtn} 
+
+              <TouchableOpacity
+                style={styles.promptLaterBtn}
                 onPress={() => setIsLoginPromptVisible(false)}
               >
                 <Text style={styles.promptLaterBtnText}>Maybe Later</Text>
