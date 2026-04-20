@@ -7,7 +7,7 @@ exports.createBlog = async (req, res) => {
 
     // Check placeholders validation from backend as well
     if (
-      location === 'Any/Select' || location === 'All Island' || location === '' ||
+      location === 'Any/Select' || location === '' ||
       season === 'Any Season' || season === '' ||
       cropType === 'Any Crop' || cropType === '' ||
       farmingMethod === 'Any Method' || farmingMethod === ''
@@ -45,13 +45,46 @@ exports.createBlog = async (req, res) => {
 // Get all blogs belonging to the logged in expert
 exports.getMyBlogs = async (req, res) => {
   try {
-    const blogs = await Blog.find({ expertId: req.user._id }).sort({ createdAt: -1 });
+    const mongoose = require('mongoose');
+    const blogs = await Blog.aggregate([
+      { $match: { expertId: new mongoose.Types.ObjectId(req.user._id) } },
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: 'comments',
+          localField: '_id',
+          foreignField: 'blogId',
+          as: 'comments'
+        }
+      },
+      {
+        $addFields: {
+          commentCount: { $size: '$comments' },
+          newCommentCount: {
+            $size: {
+              $filter: {
+                input: '$comments',
+                as: 'comment',
+                cond: { $eq: ['$$comment.isReadByExpert', false] }
+              }
+            }
+          }
+        }
+      },
+      {
+        $project: {
+          comments: 0 // Clear the temporary comments array
+        }
+      }
+    ]);
+
     res.status(200).json({
       success: true,
       count: blogs.length,
       data: blogs
     });
   } catch (error) {
+    console.error('Error fetching my blogs:', error);
     res.status(500).json({
       success: false,
       message: 'Server Error'
@@ -62,13 +95,34 @@ exports.getMyBlogs = async (req, res) => {
 // Get all blogs (Public feed)
 exports.getAllBlogs = async (req, res) => {
   try {
-    const { cropType, farmingMethod, season, location, sortBy } = req.query;
+    const { cropType, farmingMethod, season, location, sortBy, savedOnly, userId, search } = req.query;
 
     const filter = {};
     if (cropType) filter.cropType = cropType;
     if (farmingMethod) filter.farmingMethod = farmingMethod;
     if (season) filter.season = season;
     if (location) filter.location = location;
+
+    if (search) {
+      filter.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } }
+      ];
+    }
+
+    if (savedOnly === 'true' && userId) {
+      const User = require('../models/User');
+      const user = await User.findById(userId);
+      if (user && user.savedBlogs && user.savedBlogs.length > 0) {
+        filter._id = { $in: user.savedBlogs };
+      } else if (user && (!user.savedBlogs || user.savedBlogs.length === 0)) {
+        return res.status(200).json({
+          success: true,
+          count: 0,
+          data: []
+        });
+      }
+    }
 
     let sortObj = { createdAt: -1 };
     if (sortBy === 'old') {

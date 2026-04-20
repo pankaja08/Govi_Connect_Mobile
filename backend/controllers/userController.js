@@ -37,6 +37,33 @@ exports.deleteMe = async (req, res) => {
   }
 };
 
+exports.toggleSaveBlog = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const blogId = req.params.id;
+    
+    if (!user.savedBlogs) {
+      user.savedBlogs = [];
+    }
+
+    const index = user.savedBlogs.indexOf(blogId);
+    if (index === -1) {
+      user.savedBlogs.push(blogId);
+    } else {
+      user.savedBlogs.splice(index, 1);
+    }
+    
+    await user.save();
+    
+    res.status(200).json({ 
+      status: 'success', 
+      data: { savedBlogs: user.savedBlogs } 
+    });
+  } catch (err) {
+    res.status(400).json({ status: 'fail', message: err.message });
+  }
+};
+
 // ADMIN ONLY CONTROLLERS
 
 exports.getAllUsers = async (req, res) => {

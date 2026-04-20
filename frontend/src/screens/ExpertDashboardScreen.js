@@ -25,9 +25,9 @@ const { width } = Dimensions.get('window');
 
 const DROPDOWNS = {
   locations: ['All Island', 'Western', 'Central', 'Southern', 'Northern', 'Eastern'],
-  seasons: ['Any Season', 'Maha Season', 'Yala Season'],
-  crops: ['Any Crop', 'Paddy', 'Vegetables', 'Fruits', 'Export Crops'],
-  methods: ['Any Method', 'Organic', 'Conventional', 'Hydroponics']
+  seasons: ['Any Season', 'Maha Season', 'Yala Season', 'Rainy Season'],
+  crops: ['Any Crop', 'Paddy', 'Vegetables', 'Fruits', 'Export Crops', 'Plantation Crop'],
+  methods: ['Any Method', 'Organic', 'Conventional', 'Hydroponics', 'Integrated/Avenue Planting']
 };
 
 const SearchablePicker = ({ label, value, options, onSelect, placeholder }) => {
@@ -100,7 +100,7 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
   const isTitleValid = formData.title.trim().length >= 5;
   const isContentValid = contentLength >= 200;
   const validDropdowns =
-    formData.location !== 'All Island' &&
+    formData.location !== '' &&
     formData.season !== 'Any Season' &&
     formData.cropType !== 'Any Crop' &&
     formData.farmingMethod !== 'Any Method';
