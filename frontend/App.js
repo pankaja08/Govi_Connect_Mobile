@@ -129,14 +129,9 @@ export default function App() {
       setUserRole('Guest');
       setUserStatus('Active');
     },
-<<<<<<< HEAD
-    userRole
-  }), [userRole]);
-=======
     userRole,
     userStatus
   }), [userRole, userStatus]);
->>>>>>> main
 
   if (isLoading) {
     return null;
@@ -145,19 +140,12 @@ export default function App() {
   return (
     <AuthContext.Provider value={authContext}>
       <GestureHandlerRootView style={{ flex: 1 }}>
-<<<<<<< HEAD
         <MobileFrame>
           <SafeAreaProvider>
             <StatusBar style="auto" />
-            <AppNavigator userToken={userToken} userRole={userRole} />
+            <AppNavigator userToken={userToken} userRole={userRole} userStatus={userStatus} />
           </SafeAreaProvider>
         </MobileFrame>
-=======
-        <SafeAreaProvider>
-          <StatusBar style="auto" />
-          <AppNavigator userToken={userToken} userRole={userRole} userStatus={userStatus} />
-        </SafeAreaProvider>
->>>>>>> main
       </GestureHandlerRootView>
     </AuthContext.Provider>
   );
