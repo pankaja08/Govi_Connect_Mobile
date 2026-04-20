@@ -10,6 +10,7 @@ router.use(authMiddleware.protect);
 router.get('/me', userController.getMe);
 router.put('/updateMe', userController.updateMe);
 router.delete('/deleteMe', userController.deleteMe);
+router.put('/toggle-save-blog/:id', userController.toggleSaveBlog);
 
 // Admin only routes
 router.use(authMiddleware.restrictTo('Admin'));

@@ -12,6 +12,7 @@ const BASE_URL = Platform.OS === 'web'
   ? 'http://localhost:5000/api'
   : `http://${localhost}:5000/api`;
 
+
 const apiClient = axios.create({
   baseURL: BASE_URL,
   timeout: 10000,

@@ -22,12 +22,6 @@ const ExpertPastBlogsScreen = ({ navigation }) => {
   const [blogs, setBlogs] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Modal State for reading blog
-  const [selectedBlog, setSelectedBlog] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-
-  const { width } = useWindowDimensions();
-
   // useFocusEffect ensures the list re-fetches when we navigate back from ExpertHome (after making an edit)
   useFocusEffect(
     useCallback(() => {
@@ -76,8 +70,7 @@ const ExpertPastBlogsScreen = ({ navigation }) => {
   };
 
   const openBlogReader = (blog) => {
-    setSelectedBlog(blog);
-    setModalVisible(true);
+    navigation.navigate('BlogDetail', { blog });
   };
 
   const renderBlogItem = ({ item }) => (
@@ -88,13 +81,25 @@ const ExpertPastBlogsScreen = ({ navigation }) => {
         <View style={styles.badgeRow}>
           <Text style={styles.badge}>{item.cropType}</Text>
           <Text style={styles.badge}>{item.season}</Text>
+          {item.newCommentCount > 0 && (
+            <View style={styles.newCommentBadge}>
+              <Ionicons name="notifications" size={10} color="#fff" />
+              <Text style={styles.newCommentBadgeText}>{item.newCommentCount} New</Text>
+            </View>
+          )}
         </View>
 
         <Text style={styles.cardTitle} numberOfLines={2}>{item.title}</Text>
 
-        <Text style={styles.dateText}>
-          Published on {new Date(item.createdAt).toLocaleDateString()}
-        </Text>
+        <View style={styles.statsRow}>
+          <Text style={styles.dateText}>
+            Published on {new Date(item.createdAt).toLocaleDateString()}
+          </Text>
+          <View style={styles.commentStats}>
+            <Ionicons name="chatbubble-outline" size={14} color="#666" />
+            <Text style={styles.commentStatsText}>{item.commentCount || 0}</Text>
+          </View>
+        </View>
 
         <View style={styles.actionRow}>
           <TouchableOpacity
@@ -161,70 +166,6 @@ const ExpertPastBlogsScreen = ({ navigation }) => {
         />
       )}
 
-      {/* Reader Modal */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <SafeAreaView style={styles.modalArea}>
-          {selectedBlog && (
-            <>
-              <View style={styles.modalHeader}>
-                <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.backBtnWrapper}>
-                  <Ionicons name="arrow-back" size={26} color="#333" />
-                  <Text style={styles.backBtnText}>Back</Text>
-                </TouchableOpacity>
-              </View>
-
-              <ScrollView contentContainerStyle={styles.readerScroll} showsVerticalScrollIndicator={false}>
-                <Image source={{ uri: selectedBlog.imageUrl }} style={styles.readerImage} />
-
-                <View style={styles.readerContent}>
-                  <Text style={styles.readerTitle}>{selectedBlog.title}</Text>
-
-                  <View style={styles.readerMetaRow}>
-                    <Ionicons name="calendar-outline" size={14} color="#666" />
-                    <Text style={styles.readerMetaText}>
-                      {new Date(selectedBlog.createdAt).toLocaleDateString()}
-                    </Text>
-
-                    <Text style={styles.metaDot}>•</Text>
-
-                    <Ionicons name="location-outline" size={14} color="#666" />
-                    <Text style={styles.readerMetaText}>{selectedBlog.location}</Text>
-                  </View>
-
-                  {/* Secondary Details Row */}
-                  <View style={[styles.readerMetaRow, { marginTop: -10 }]}>
-                    <Ionicons name="leaf-outline" size={14} color="#666" />
-                    <Text style={styles.readerMetaText}>{selectedBlog.cropType}</Text>
-
-                    <Text style={styles.metaDot}>•</Text>
-
-                    <Ionicons name="cloud-outline" size={14} color="#666" />
-                    <Text style={styles.readerMetaText}>{selectedBlog.season}</Text>
-
-                    <Text style={styles.metaDot}>•</Text>
-
-                    <Ionicons name="build-outline" size={14} color="#666" />
-                    <Text style={styles.readerMetaText}>{selectedBlog.farmingMethod}</Text>
-                  </View>
-
-                  <View style={styles.divider} />
-
-                  {/* HTML Rendering */}
-                  <RenderHtml
-                    contentWidth={width - 40}
-                    source={{ html: selectedBlog.content }}
-                    tagsStyles={htmlStyles}
-                  />
-                </View>
-              </ScrollView>
-            </>
-          )}
-        </SafeAreaView>
-      </Modal>
     </SafeAreaView>
   );
 };
@@ -283,7 +224,6 @@ const styles = StyleSheet.create({
   },
   createBtnText: { color: '#fff', fontWeight: 'bold' },
   listContent: { padding: 15, paddingBottom: 30 },
-
   card: {
     backgroundColor: '#fff',
     borderRadius: 15,
@@ -328,7 +268,37 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     color: '#888',
+  },
+  statsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 15
+  },
+  commentStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4
+  },
+  commentStatsText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '600'
+  },
+  newCommentBadge: {
+    backgroundColor: '#E53935',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+    gap: 3,
+    marginLeft: 'auto'
+  },
+  newCommentBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '800'
   },
   actionRow: {
     flexDirection: 'row',
@@ -353,26 +323,7 @@ const styles = StyleSheet.create({
   iconBtn: {
     marginLeft: 15,
     padding: 2
-  },
-
-  // Modal Styles
-  modalArea: { flex: 1, backgroundColor: '#fff' },
-  modalHeader: {
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee'
-  },
-  backBtnWrapper: { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', paddingVertical: 5, paddingRight: 15 },
-  backBtnText: { fontSize: 16, color: '#333', marginLeft: 8, fontWeight: '500' },
-  readerScroll: { paddingBottom: 40 },
-  readerImage: { width: '100%', height: 250 },
-  readerContent: { padding: 20 },
-  readerTitle: { fontSize: 24, fontWeight: 'bold', color: '#111', marginBottom: 15, lineHeight: 32 },
-  readerMetaRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  readerMetaText: { fontSize: 13, color: '#666', marginLeft: 4 },
-  metaDot: { marginHorizontal: 10, color: '#ccc' },
-  divider: { height: 1, backgroundColor: '#eee', marginBottom: 20 }
+  }
 });
 
 export default ExpertPastBlogsScreen;
