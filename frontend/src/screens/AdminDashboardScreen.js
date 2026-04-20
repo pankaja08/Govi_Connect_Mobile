@@ -135,10 +135,17 @@ const AdminDashboardScreen = ({ navigation }) => {
           {/* User Distribution Fake Chart */}
           <View style={styles.cardLarge}>
             <Text style={styles.cardTitle}>User Distribution</Text>
+<<<<<<< Updated upstream
             <CustomDonutChart 
               farmers={stats.farmers} 
               agriOfficers={stats.agriOfficers} 
               admins={stats.totalUsers - stats.farmers - stats.agriOfficers} 
+=======
+            <CustomDonutChart
+              farmers={stats.farmers}
+              agriOfficers={stats.agriOfficers}
+              admins={stats.totalUsers - stats.farmers - stats.agriOfficers}
+>>>>>>> Stashed changes
             />
           </View>
 
