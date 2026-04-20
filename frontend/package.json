@@ -46,11 +46,7 @@
     "@babel/plugin-transform-shorthand-properties": "^7.27.1",
     "@babel/plugin-transform-spread": "^7.28.6",
     "@babel/plugin-transform-template-literals": "^7.27.1",
-<<<<<<< HEAD
     "babel-preset-expo": "~54.0.1"
-=======
-    "babel-preset-expo": "~54.0.0"
->>>>>>> main
   },
   "private": true
 }
