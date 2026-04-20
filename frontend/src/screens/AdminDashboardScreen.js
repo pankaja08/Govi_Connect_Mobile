@@ -31,7 +31,7 @@ const AdminDashboardScreen = ({ navigation }) => {
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
+
         {/* Top Stat Cards */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
           <StatCard title="TOTAL USERS" value="9" borderColor="#FFB300" />
@@ -41,75 +41,75 @@ const AdminDashboardScreen = ({ navigation }) => {
         </ScrollView>
 
         <View style={styles.filterBar}>
-            <Text style={styles.filterDate}>DATE RANGE: 12/01/2025 - 03/01/2026</Text>
-            <TouchableOpacity style={styles.filterBtn}>
-                <Text style={styles.filterBtnText}>FILTER DATA</Text>
-            </TouchableOpacity>
+          <Text style={styles.filterDate}>DATE RANGE: 12/01/2025 - 03/01/2026</Text>
+          <TouchableOpacity style={styles.filterBtn}>
+            <Text style={styles.filterBtnText}>FILTER DATA</Text>
+          </TouchableOpacity>
         </View>
 
         {/* Charts Row equivalent */}
         <View style={styles.rowCards}>
-            {/* User Distribution Fake Chart */}
-            <View style={styles.cardLarge}>
-                <Text style={styles.cardTitle}>User Distribution</Text>
-                <View style={styles.pieContainer}>
-                    <View style={styles.pieOuter}>
-                        <View style={styles.pieInner}>
-                            <View style={styles.pieSlice1} />
-                            <View style={styles.pieSlice2} />
-                            <View style={styles.pieSlice3} />
-                        </View>
-                        <View style={styles.pieHole} />
-                    </View>
+          {/* User Distribution Fake Chart */}
+          <View style={styles.cardLarge}>
+            <Text style={styles.cardTitle}>User Distribution</Text>
+            <View style={styles.pieContainer}>
+              <View style={styles.pieOuter}>
+                <View style={styles.pieInner}>
+                  <View style={styles.pieSlice1} />
+                  <View style={styles.pieSlice2} />
+                  <View style={styles.pieSlice3} />
                 </View>
-                <View style={styles.legendContainer}>
-                    <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: '#4CAF50'}]}/><Text style={styles.legendText}>Farmers</Text></View>
-                    <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: '#FFB300'}]}/><Text style={styles.legendText}>Agri Officers</Text></View>
-                    <View style={styles.legendItem}><View style={[styles.dot, {backgroundColor: '#2E7D32'}]}/><Text style={styles.legendText}>Admins</Text></View>
-                </View>
+                <View style={styles.pieHole} />
+              </View>
             </View>
+            <View style={styles.legendContainer}>
+              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#4CAF50' }]} /><Text style={styles.legendText}>Farmers</Text></View>
+              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#FFB300' }]} /><Text style={styles.legendText}>Agri Officers</Text></View>
+              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#2E7D32' }]} /><Text style={styles.legendText}>Admins</Text></View>
+            </View>
+          </View>
 
-            {/* Geographical Distribution Fake Chart */}
-            <View style={styles.cardLarge}>
-                <Text style={styles.cardTitle}>Geographical Distribution</Text>
-                <View style={styles.barContainer}>
-                    <View style={styles.barItem}><View style={[styles.barFill, {height: '30%'}]}/><Text style={styles.barLabel}>Gam.</Text></View>
-                    <View style={styles.barItem}><View style={[styles.barFill, {height: '30%'}]}/><Text style={styles.barLabel}>Amp.</Text></View>
-                    <View style={styles.barItem}><View style={[styles.barFill, {height: '30%'}]}/><Text style={styles.barLabel}>Kil.</Text></View>
-                    <View style={styles.barItem}><View style={[styles.barFill, {height: '90%'}]}/><Text style={styles.barLabel}>Gam.</Text></View>
-                </View>
+          {/* Geographical Distribution Fake Chart */}
+          <View style={styles.cardLarge}>
+            <Text style={styles.cardTitle}>Geographical Distribution</Text>
+            <View style={styles.barContainer}>
+              <View style={styles.barItem}><View style={[styles.barFill, { height: '30%' }]} /><Text style={styles.barLabel}>Gam.</Text></View>
+              <View style={styles.barItem}><View style={[styles.barFill, { height: '30%' }]} /><Text style={styles.barLabel}>Amp.</Text></View>
+              <View style={styles.barItem}><View style={[styles.barFill, { height: '30%' }]} /><Text style={styles.barLabel}>Kil.</Text></View>
+              <View style={styles.barItem}><View style={[styles.barFill, { height: '90%' }]} /><Text style={styles.barLabel}>Gam.</Text></View>
             </View>
+          </View>
         </View>
 
         {/* Crop Performance Section */}
         <Text style={styles.sectionTitle}>
-            <MaterialCommunityIcons name="seed-outline" size={20} color="#FFB300" /> Crop Performance
+          <MaterialCommunityIcons name="seed-outline" size={20} color="#FFB300" /> Crop Performance
         </Text>
-        
-        <View style={styles.cropCardsContainer}>
-            <View style={styles.cropCard}>
-                <Text style={styles.cropTitle}>🏆 Best Crops: Yala</Text>
-                <View style={styles.cropBarRow}>
-                    <Text style={styles.cropLabel}>Banana</Text>
-                    <View style={styles.cropBarBg}><View style={[styles.cropBarFill, {width: '80%', backgroundColor: '#FFB300'}]}/></View>
-                </View>
-            </View>
 
-            <View style={styles.cropCard}>
-                <Text style={styles.cropTitle}>🏆 Best Crops: Maha</Text>
-                <View style={styles.cropBarRow}>
-                    <Text style={styles.cropLabel}>Mango</Text>
-                    <View style={styles.cropBarBg}><View style={[styles.cropBarFill, {width: '90%', backgroundColor: '#2196F3'}]}/></View>
-                </View>
+        <View style={styles.cropCardsContainer}>
+          <View style={styles.cropCard}>
+            <Text style={styles.cropTitle}>🏆 Best Crops: Yala</Text>
+            <View style={styles.cropBarRow}>
+              <Text style={styles.cropLabel}>Banana</Text>
+              <View style={styles.cropBarBg}><View style={[styles.cropBarFill, { width: '80%', backgroundColor: '#FFB300' }]} /></View>
             </View>
-            
-            <View style={styles.cropCard}>
-                <Text style={styles.cropTitle}>🏆 Best Crops: Inter</Text>
-                <View style={styles.cropBarRow}>
-                    <Text style={styles.cropLabel}>Pumpkin</Text>
-                    <View style={styles.cropBarBg}><View style={[styles.cropBarFill, {width: '60%', backgroundColor: '#4CAF50'}]}/></View>
-                </View>
+          </View>
+
+          <View style={styles.cropCard}>
+            <Text style={styles.cropTitle}>🏆 Best Crops: Maha</Text>
+            <View style={styles.cropBarRow}>
+              <Text style={styles.cropLabel}>Mango</Text>
+              <View style={styles.cropBarBg}><View style={[styles.cropBarFill, { width: '90%', backgroundColor: '#2196F3' }]} /></View>
             </View>
+          </View>
+
+          <View style={styles.cropCard}>
+            <Text style={styles.cropTitle}>🏆 Best Crops: Inter</Text>
+            <View style={styles.cropBarRow}>
+              <Text style={styles.cropLabel}>Pumpkin</Text>
+              <View style={styles.cropBarBg}><View style={[styles.cropBarFill, { width: '60%', backgroundColor: '#4CAF50' }]} /></View>
+            </View>
+          </View>
         </View>
 
       </ScrollView>
@@ -130,18 +130,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
+    flexWrap: 'wrap',
   },
   headerTitleContainer: {
     flex: 1,
     marginLeft: 15,
+    minWidth: 150,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: width < 380 ? 18 : 20,
     fontWeight: 'bold',
     color: '#115C39',
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: 10,
     color: '#757575',
   },
   reportBtn: {
@@ -151,6 +153,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
+    marginTop: width < 380 ? 8 : 0,
   },
   reportBtnText: {
     color: '#fff',
@@ -191,30 +194,36 @@ const styles = StyleSheet.create({
   },
   filterBar: {
     flexDirection: 'row',
-    justifyContent: 'flex-end',
+    justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 20,
+    flexWrap: 'wrap',
   },
   filterDate: {
-    fontSize: 11,
+    fontSize: 10,
     color: '#757575',
-    marginRight: 10,
     backgroundColor: '#fff',
     padding: 6,
     borderRadius: 4,
     borderWidth: 1,
     borderColor: '#E0E0E0',
+    marginBottom: width < 380 ? 8 : 0,
+    flex: 1,
+    marginRight: 8,
+    textAlign: 'center',
   },
   filterBtn: {
     backgroundColor: '#1B7A43',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 4,
+    minWidth: 100,
   },
   filterBtnText: {
     color: '#fff',
     fontSize: 10,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   rowCards: {
     flexDirection: 'column', // Changed to column for mobile
