@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
+import DateTimePicker from '@react-native-community/datetimepicker';
 
 const SRI_LANKA_MAP = {
   'Western': ['Colombo', 'Gampaha', 'Kalutara'],
@@ -47,6 +48,65 @@ const FormInput = ({ label, icon, value, onChangeText, placeholder, secure = fal
     {error ? <Text style={styles.errorHint}>{error}</Text> : null}
   </View>
 );
+
+const DateInput = ({ label, icon, value, onChangeDate, placeholder, error }) => {
+  const [show, setShow] = useState(false);
+
+  const handleDateChange = (event, selectedDate) => {
+    setShow(Platform.OS === 'ios');
+    if (event.type === 'set' && selectedDate) {
+      if (Platform.OS === 'android') {
+        setShow(false);
+      }
+      const dateString = selectedDate.toISOString().split('T')[0];
+      onChangeDate(dateString);
+    } else if (event.type === 'dismissed') {
+      setShow(false);
+    }
+  };
+
+  const currentValDate = value ? new Date(value) : new Date();
+
+  return (
+    <View style={styles.inputGroup}>
+      <Text style={styles.label}>{label} <Text style={{color: 'red'}}>*</Text></Text>
+      
+      {Platform.OS === 'web' ? (
+        <View style={[styles.inputWrapper, { paddingVertical: 2 }, error && styles.inputErrorBorder]}>
+          <Ionicons name={icon} size={20} color={error ? "#D32F2F" : "#2E7D32"} style={styles.inputIcon} />
+          {React.createElement('input', {
+            type: 'date',
+            value: value || '',
+            onChange: (e) => onChangeDate(e.target.value),
+            style: { border: 'none', background: 'transparent', width: '100%', fontSize: 16, outline: 'none', color: '#333', padding: '10px 0' }
+          })}
+        </View>
+      ) : (
+        <>
+          <TouchableOpacity 
+            style={[styles.inputWrapper, { paddingVertical: 12 }, error && styles.inputErrorBorder]} 
+            onPress={() => setShow(true)}
+          >
+            <Ionicons name={icon} size={20} color={error ? "#D32F2F" : "#2E7D32"} style={styles.inputIcon} />
+            <Text style={[styles.input, { paddingVertical: 0 }, !value && { color: '#999' }]}>
+              {value || placeholder}
+            </Text>
+          </TouchableOpacity>
+          {show && (
+            <DateTimePicker
+              value={isNaN(currentValDate.getTime()) ? new Date() : currentValDate}
+              mode="date"
+              display="default"
+              onChange={handleDateChange}
+              maximumDate={new Date()}
+            />
+          )}
+        </>
+      )}
+      {error ? <Text style={styles.errorHint}>{error}</Text> : null}
+    </View>
+  );
+};
 
 const SearchablePicker = ({ label, value, options, onSelect, placeholder }) => {
   const [modalVisible, setModalVisible] = useState(false);
@@ -224,7 +284,7 @@ const RegisterScreen = ({ navigation }) => {
             <FormInput label="NIC Number" icon="card-outline" value={formData.nic} onChangeText={(t) => updateField('nic', t)} placeholder="123456789V or 12 digits" error={errors.nic} />
             <FormInput label="Email Address" icon="mail-outline" value={formData.email} onChangeText={(t) => updateField('email', t)} placeholder="email@example.com" keyboard="email-address" error={errors.email} />
             <FormInput label="Contact Number" icon="call-outline" value={formData.contactInfo} onChangeText={(t) => updateField('contactInfo', t)} placeholder="07XXXXXXXX" keyboard="phone-pad" error={errors.contactInfo} />
-            <FormInput label="Date of Birth" icon="calendar-outline" value={formData.dob} onChangeText={(t) => updateField('dob', t)} placeholder="YYYY-MM-DD" error={errors.dob} />
+            <DateInput label="Date of Birth" icon="calendar-outline" value={formData.dob} onChangeDate={(t) => updateField('dob', t)} placeholder="YYYY-MM-DD" error={errors.dob} />
             <FormInput label="Permanent Address" icon="home-outline" value={formData.address} onChangeText={(t) => updateField('address', t)} placeholder="Residential address" error={errors.address} />
 
             <View style={styles.row}>
