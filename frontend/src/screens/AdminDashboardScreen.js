@@ -1,18 +1,67 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
+import apiClient from '../api/client';
+import CountUp from '../components/CountUp';
+import CustomDonutChart from '../components/CustomDonutChart';
+import CustomBarChart from '../components/CustomBarChart';
+
 
 const { width } = Dimensions.get('window');
 
-const StatCard = ({ title, value, borderColor }) => (
-  <View style={[styles.statCard, { borderLeftColor: borderColor }]}>
-    <Text style={styles.statTitle}>{title}</Text>
-    <Text style={[styles.statValue, { color: borderColor }]}>{value}</Text>
-  </View>
+const StatCard = ({ title, value, colors, icon, iconType = 'Ionicons', delay = 0 }) => (
+  <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper}>
+    <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.statCard}>
+      <View style={styles.cardHeader}>
+        <Text style={styles.statTitle}>{title}</Text>
+        <View style={styles.iconCircle}>
+          {iconType === 'Ionicons' ? (
+            <Ionicons name={icon} size={20} color="#228531ff" />
+          ) : iconType === 'MaterialCommunityIcons' ? (
+            <MaterialCommunityIcons name={icon} size={20} color="#228531ff" />
+          ) : (
+            <FontAwesome5 name={icon} size={18} color="#228531ff" />
+          )}
+        </View>
+      </View>
+
+      <View style={styles.cardFooter}>
+        <CountUp style={styles.statValue} value={value} delay={delay} />
+      </View>
+    </LinearGradient>
+  </TouchableOpacity>
 );
 
 const AdminDashboardScreen = ({ navigation }) => {
+  const [stats, setStats] = useState({
+    totalUsers: 0,
+    farmers: 0,
+    agriOfficers: 0,
+    pendingExperts: 0,
+    geographicStats: []
+  });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const fetchStats = async () => {
+    try {
+      setLoading(true);
+      const response = await apiClient.get('/users/admin/stats');
+      if (response.data.status === 'success') {
+        setStats(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Custom Header matching Drawer style for uniform look but hidden standard header */}
@@ -32,13 +81,47 @@ const AdminDashboardScreen = ({ navigation }) => {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
 
-        {/* Top Stat Cards */}
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.statsScroll}>
-          <StatCard title="TOTAL USERS" value="9" borderColor="#FFB300" />
-          <StatCard title="FARMERS" value="6" borderColor="#2196F3" />
-          <StatCard title="AGRI OFFICERS" value="1" borderColor="#4CAF50" />
-          <StatCard title="PENDING" value="1" borderColor="#F44336" />
-        </ScrollView>
+        {/* Top Stat Cards - 2x2 Grid */}
+        <View style={styles.gridContainer}>
+          {loading ? (
+            <View style={styles.loadingContainerLarge}>
+              <ActivityIndicator size="large" color="#2E7D32" />
+              <Text style={styles.loadingText}>Fetching Platform Metrics...</Text>
+            </View>
+          ) : (
+            <>
+              <StatCard
+                title="Total Users"
+                value={stats.totalUsers.toString()}
+                colors={['#ffffffff', '#ffffffff']}
+                icon="people"
+                delay={0}
+              />
+              <StatCard
+                title="Farmers"
+                value={stats.farmers.toString()}
+                colors={['#ffffffff', '#ffffffff']}
+                icon="leaf"
+                iconType="MaterialCommunityIcons"
+                delay={100}
+              />
+              <StatCard
+                title="Agri Officers"
+                value={stats.agriOfficers.toString()}
+                colors={['#ffffffff', '#ffffffff']}
+                icon="school"
+                delay={200}
+              />
+              <StatCard
+                title="Pending"
+                value={stats.pendingExperts.toString()}
+                colors={['# ffffffff', '#ffffffff']}
+                icon="time"
+                delay={300}
+              />
+            </>
+          )}
+        </View>
 
         <View style={styles.filterBar}>
           <Text style={styles.filterDate}>DATE RANGE: 12/01/2025 - 03/01/2026</Text>
@@ -52,32 +135,17 @@ const AdminDashboardScreen = ({ navigation }) => {
           {/* User Distribution Fake Chart */}
           <View style={styles.cardLarge}>
             <Text style={styles.cardTitle}>User Distribution</Text>
-            <View style={styles.pieContainer}>
-              <View style={styles.pieOuter}>
-                <View style={styles.pieInner}>
-                  <View style={styles.pieSlice1} />
-                  <View style={styles.pieSlice2} />
-                  <View style={styles.pieSlice3} />
-                </View>
-                <View style={styles.pieHole} />
-              </View>
-            </View>
-            <View style={styles.legendContainer}>
-              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#4CAF50' }]} /><Text style={styles.legendText}>Farmers</Text></View>
-              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#FFB300' }]} /><Text style={styles.legendText}>Agri Officers</Text></View>
-              <View style={styles.legendItem}><View style={[styles.dot, { backgroundColor: '#2E7D32' }]} /><Text style={styles.legendText}>Admins</Text></View>
-            </View>
+            <CustomDonutChart
+              farmers={stats.farmers}
+              agriOfficers={stats.agriOfficers}
+              admins={stats.totalUsers - stats.farmers - stats.agriOfficers}
+            />
           </View>
 
-          {/* Geographical Distribution Fake Chart */}
+          {/* Geographical Distribution dynamic Chart */}
           <View style={styles.cardLarge}>
             <Text style={styles.cardTitle}>Geographical Distribution</Text>
-            <View style={styles.barContainer}>
-              <View style={styles.barItem}><View style={[styles.barFill, { height: '30%' }]} /><Text style={styles.barLabel}>Gam.</Text></View>
-              <View style={styles.barItem}><View style={[styles.barFill, { height: '30%' }]} /><Text style={styles.barLabel}>Amp.</Text></View>
-              <View style={styles.barItem}><View style={[styles.barFill, { height: '30%' }]} /><Text style={styles.barLabel}>Kil.</Text></View>
-              <View style={styles.barItem}><View style={[styles.barFill, { height: '90%' }]} /><Text style={styles.barLabel}>Gam.</Text></View>
-            </View>
+            <CustomBarChart data={stats.geographicStats} />
           </View>
         </View>
 
@@ -165,32 +233,88 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 40,
   },
-  statsScroll: {
+  gridContainer: {
     flexDirection: 'row',
-    marginBottom: 16,
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  cardWrapper: {
+    width: (width - 44) / 2,
+    height: 110,
+    marginBottom: 12,
   },
   statCard: {
+    flex: 5,
+    padding: 15,
+    borderRadius: 10,
+    justifyContent: 'space-between',
     backgroundColor: '#fff',
-    padding: 16,
-    borderRadius: 8,
-    width: 140,
-    marginRight: 12,
-    borderLeftWidth: 4,
+    borderTopWidth: 5,
+    borderTopColor: '#2b973bff',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  iconCircle: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  loadingContainerLarge: {
+    width: '100%',
+    height: 250,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#eee',
+  },
+  loadingText: {
+    marginTop: 12,
+    color: '#666',
+    fontSize: 14,
+    fontWeight: '500',
   },
   statTitle: {
-    fontSize: 10,
-    fontWeight: 'bold',
-    color: '#757575',
-    marginBottom: 8,
+    fontSize: 17,
+    fontWeight: '600',
+    color: 'rgba(26, 72, 20, 0.9)',
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-end',
   },
   statValue: {
-    fontSize: 24,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#124f1bff',
+  },
+  percentageContainer: {
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 10,
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  },
+  percentageText: {
+    fontSize: 10,
     fontWeight: 'bold',
+    color: '#fff',
   },
   filterBar: {
     flexDirection: 'row',
