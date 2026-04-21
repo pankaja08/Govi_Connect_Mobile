@@ -176,7 +176,7 @@ const HomeScreen = ({ navigation }) => {
     fetchLatestBlogs();
   }, []);
 
-  const fetchLatestBlogs = async () => {
+  const fetchLatestBlogs = async (overrideSearchQuery) => {
     try {
       const q = [];
       if (filters.cropType !== 'All') q.push(`cropType=${encodeURIComponent(filters.cropType)}`);
@@ -189,8 +189,9 @@ const HomeScreen = ({ navigation }) => {
         q.push(`savedOnly=true&userId=${user._id}`);
       }
 
-      if (searchQuery && searchQuery.trim() !== '') {
-        q.push(`search=${encodeURIComponent(searchQuery.trim())}`);
+      const queryToUse = typeof overrideSearchQuery === 'string' ? overrideSearchQuery : searchQuery;
+      if (queryToUse && queryToUse.trim() !== '') {
+        q.push(`search=${encodeURIComponent(queryToUse.trim())}`);
       }
 
       const queryStr = q.length > 0 ? `?${q.join('&')}` : '';
@@ -200,6 +201,15 @@ const HomeScreen = ({ navigation }) => {
       console.log('Failed to fetch blogs', error);
     }
   };
+
+  // Debounce search effect
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      fetchLatestBlogs();
+    }, 500);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   // Auto-scroll Timer: 6 seconds
   useEffect(() => {
@@ -417,20 +427,29 @@ const HomeScreen = ({ navigation }) => {
                   placeholderTextColor="#444"
                   value={searchQuery}
                   onChangeText={setSearchQuery}
-                  onSubmitEditing={fetchLatestBlogs}
+                  onSubmitEditing={() => fetchLatestBlogs()}
                   returnKeyType="search"
                 />
                 {searchQuery.length > 0 && (
                   <TouchableOpacity
                     onPress={() => {
-                      Keyboard.dismiss();
-                      fetchLatestBlogs();
+                      setSearchQuery('');
+                      fetchLatestBlogs('');
                     }}
-                    style={{ marginLeft: 8 }}
+                    style={{ marginLeft: 4 }}
                   >
-                    <Ionicons name="search-circle" size={32} color="#187a38" />
+                    <Ionicons name="close-circle" size={24} color="#888" />
                   </TouchableOpacity>
                 )}
+                <TouchableOpacity
+                  onPress={() => {
+                    Keyboard.dismiss();
+                    fetchLatestBlogs();
+                  }}
+                  style={{ marginLeft: searchQuery.length > 0 ? 4 : 8 }}
+                >
+                  <Ionicons name="search-circle" size={32} color="#187a38" />
+                </TouchableOpacity>
               </View>
               <TouchableOpacity style={styles.filterButton} onPress={() => setIsFilterVisible(true)}>
                 <Ionicons name="options-outline" size={20} color="#1B4332" />
