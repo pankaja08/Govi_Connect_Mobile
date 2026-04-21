@@ -1,4 +1,5 @@
 const Product = require('../models/Product');
+const cloudinary = require('../utils/cloudinary');
 
 // GET /api/products — public, supports query filters
 exports.getAllProducts = async (req, res) => {
@@ -62,6 +63,14 @@ exports.createProduct = async (req, res) => {
   try {
     const { name, description, price, quantity, unit, category, saleType, image, contactNumber, location } = req.body;
 
+    let imageUrl = '';
+    if (image) {
+      const uploadResponse = await cloudinary.uploader.upload(image, {
+        folder: 'Market Products',
+      });
+      imageUrl = uploadResponse.secure_url;
+    }
+
     const product = await Product.create({
       name,
       description,
@@ -70,7 +79,7 @@ exports.createProduct = async (req, res) => {
       unit,
       category,
       saleType,
-      image,
+      image: imageUrl,
       contactNumber,
       location,
       seller: req.user._id
@@ -125,9 +134,19 @@ exports.updateProduct = async (req, res) => {
     }
 
     const allowed = ['name', 'description', 'price', 'quantity', 'unit', 'category', 'saleType', 'image', 'contactNumber', 'location', 'status'];
-    allowed.forEach(field => {
-      if (req.body[field] !== undefined) product[field] = req.body[field];
-    });
+    
+    for (const field of allowed) {
+      if (req.body[field] !== undefined) {
+        if (field === 'image' && req.body.image.startsWith('data:image')) {
+          const uploadResponse = await cloudinary.uploader.upload(req.body.image, {
+            folder: 'Market Products',
+          });
+          product.image = uploadResponse.secure_url;
+        } else {
+          product[field] = req.body[field];
+        }
+      }
+    }
 
     await product.save();
     res.status(200).json({ status: 'success', data: { product } });
