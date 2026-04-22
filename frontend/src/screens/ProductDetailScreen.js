@@ -242,15 +242,10 @@ const ProductDetailScreen = ({ route, navigation }) => {
             onRate={handleRate}
             disabled={isOwnProduct || ratingLoading}
           />
-          {!isOwnProduct ? (
+          {!isOwnProduct && (
             <TouchableOpacity style={styles.contactBtn} onPress={handleContact}>
               <Ionicons name="logo-whatsapp" size={20} color="#fff" />
               <Text style={styles.contactBtnText}>Contact Seller</Text>
-            </TouchableOpacity>
-          ) : (
-            <TouchableOpacity style={[styles.contactBtn, { backgroundColor: '#FFB300' }]} onPress={() => navigation.navigate('AddProduct', { editProduct: product })}>
-              <Ionicons name="pencil" size={20} color="#1B5E20" />
-              <Text style={[styles.contactBtnText, { color: '#1B5E20' }]}>Edit Product</Text>
             </TouchableOpacity>
           )}
         </View>
