@@ -22,6 +22,7 @@ import NotificationsScreen from '../screens/NotificationsScreen';
 import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 import ProductDetailScreen from '../screens/ProductDetailScreen';
 import AddProductScreen from '../screens/AddProductScreen';
+import MyProductsScreen from '../screens/MyProductsScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -129,6 +130,15 @@ const MainDrawer = () => {
         options={{ 
           title: 'Notifications',
           drawerIcon: ({color}) => <Ionicons name="notifications-outline" size={22} color={color} />,
+          headerShown: false
+        }} 
+      />
+      <Drawer.Screen 
+        name="MyProducts" 
+        component={MyProductsScreen} 
+        options={{ 
+          title: 'My Product Listings',
+          drawerIcon: ({color}) => <Ionicons name="list-outline" size={22} color={color} />,
           headerShown: false
         }} 
       />
@@ -356,6 +366,11 @@ const AppNavigator = ({ userToken, userRole }) => {
             <Stack.Screen
               name="AddProduct"
               component={AddProductScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="MyProducts"
+              component={MyProductsScreen}
               options={{ headerShown: false }}
             />
           </>

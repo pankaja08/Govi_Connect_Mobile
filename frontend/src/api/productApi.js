@@ -19,6 +19,9 @@ export const productApi = {
   // Update an existing product (seller only)
   update: (id, data) => apiClient.patch(`/products/${id}`, data),
 
+  // Delete a product (seller only)
+  delete: (id) => apiClient.delete(`/products/${id}`),
+
   // Rate a product (value 1-5)
   rate: (id, value) => apiClient.post(`/products/${id}/rate`, { value }),
 
