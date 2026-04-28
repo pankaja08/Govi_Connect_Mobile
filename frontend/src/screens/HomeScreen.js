@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from 'react';
+import React, { useState, useEffect, useRef, useContext, useCallback } from 'react';
 import {
   View,
   Text,
@@ -22,6 +22,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import apiClient from '../api/client';
 import { AuthContext } from '../context/AuthContext';
+import { useFocusEffect } from '@react-navigation/native';
+import { fetchUserNotifications } from '../api/notificationApi';
 
 const CAROUSEL_DATA = [
   {
@@ -108,7 +110,24 @@ const HomeScreen = ({ navigation }) => {
   const [activeSlide, setActiveSlide] = useState(0);
   const [imageErrors, setImageErrors] = useState({});
   const [searchQuery, setSearchQuery] = useState('');
+  const [unreadCount, setUnreadCount] = useState(0);
   const flatListRef = useRef(null);
+
+  // Refresh unread notification count every time this screen is focused
+  useFocusEffect(
+    useCallback(() => {
+      if (userRole !== 'Guest') {
+        fetchUserNotifications()
+          .then((res) => {
+            const count = (res.data || []).filter((n) => !n.isRead).length;
+            setUnreadCount(count);
+          })
+          .catch(() => setUnreadCount(0));
+      } else {
+        setUnreadCount(0);
+      }
+    }, [userRole])
+  );
 
   // Filter States
   const [isFilterVisible, setIsFilterVisible] = useState(false);
@@ -343,9 +362,11 @@ const HomeScreen = ({ navigation }) => {
                 }}
               >
                 <Ionicons name="notifications-outline" size={24} color="#1B4332" />
-                <View style={styles.headerBadge}>
-                  <Text style={styles.headerBadgeText}>3</Text>
-                </View>
+                {unreadCount > 0 && (
+                  <View style={styles.headerBadge}>
+                    <Text style={styles.headerBadgeText}>{unreadCount}</Text>
+                  </View>
+                )}
               </TouchableOpacity>
 
               {/* NEW Profile Icon */}
