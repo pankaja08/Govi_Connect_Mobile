@@ -80,8 +80,7 @@ exports.getDashboardStats = async (req, res) => {
     const geographicStats = await User.aggregate([
       { $match: { role: 'User' } },
       { $group: { _id: '$district', count: { $sum: 1 } } },
-      { $sort: { count: -1 } },
-      { $limit: 6 } // Top 6 districts
+      { $sort: { count: -1 } }
     ]);
 
     res.status(200).json({
