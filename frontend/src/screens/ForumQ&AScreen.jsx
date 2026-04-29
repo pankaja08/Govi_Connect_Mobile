@@ -6,9 +6,9 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  TextInput,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
@@ -56,6 +56,15 @@ const ForumQAScreen = ({ navigation, route }) => {
       <ScrollView style={styles.container} contentContainerStyle={styles.containerContent}>
         <View style={styles.detailCard}>
           <Text style={styles.questionText}>{currentQuestion.text}</Text>
+
+          {currentQuestion.images && currentQuestion.images.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+              {currentQuestion.images.map((img, idx) => (
+                <Image key={idx} source={{ uri: img }} style={styles.cardImage} />
+              ))}
+            </ScrollView>
+          )}
+
           <View style={styles.metaRow}>
             <View style={styles.categoryBadge}>
               <Text style={styles.categoryText}>{currentQuestion.category}</Text>
@@ -103,6 +112,8 @@ const styles = StyleSheet.create({
   answerText: { color: '#344430', fontSize: 14, lineHeight: 20 },
   centerContent: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   emptyText: { color: '#556B53', fontSize: 16 },
+  imageScroll: { marginTop: 15, marginBottom: 5 },
+  cardImage: { width: 150, height: 150, borderRadius: 12, marginRight: 12, borderWidth: 1, borderColor: '#E1E8E0' },
 });
 
 export default ForumQAScreen;

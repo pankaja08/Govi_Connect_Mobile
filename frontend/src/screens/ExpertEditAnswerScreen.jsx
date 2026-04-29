@@ -96,7 +96,7 @@ const ExpertEditAnswerScreen = ({ navigation, route }) => {
               <View style={styles.expertAvatarSmall}>
                 <Ionicons name="person" size={16} color="#2E7D32" />
               </View>
-              <Text style={styles.formCardTitle}>Your Expert Answer</Text>
+              <Text style={styles.formCardTitle}>Expert Answer</Text>
             </View>
 
             <Text style={styles.inputLabel}>

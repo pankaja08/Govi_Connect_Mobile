@@ -183,6 +183,14 @@ const ExpertQuestionCard = ({ question, currentUserId, onAnswer, onDeleteAnswer,
       </View>
       <Text style={styles.qText}>{question.text}</Text>
 
+      {question.images && question.images.length > 0 && (
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+          {question.images.map((img, idx) => (
+            <Image key={idx} source={{ uri: img }} style={styles.cardImage} />
+          ))}
+        </ScrollView>
+      )}
+
       {/* Existing Answers for Expert to see/manage */}
       {question.answers && question.answers.length > 0 && (
         <View style={styles.expertExistingAnswers}>
