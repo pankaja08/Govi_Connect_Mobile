@@ -358,13 +358,13 @@ const HomeScreen = ({ navigation }) => {
           {/* Greeting Section */}
           <View style={styles.greetingContainer}>
             <View style={styles.greetingTexts}>
-               {/* Dynamic Name & Emoji added here */}
-               <Text style={styles.greetingTitle}>
-                 {getTimeGreeting()}, {user?.name ? user.name.split(' ')[0] : 'Farmer'} 👋
-               </Text>
-               <Text style={styles.greetingSubtitle}>Welcome to Sri Lanka's First Agri-Community Platform</Text>
-             </View>
-           </View>
+              {/* Dynamic Name & Emoji added here */}
+              <Text style={styles.greetingTitle}>
+                {getTimeGreeting()}, {user?.name ? user.name.split(' ')[0] : 'Farmer'} 👋
+              </Text>
+              <Text style={styles.greetingSubtitle}>Welcome to Sri Lanka's First Agri-Community Platform</Text>
+            </View>
+          </View>
 
           {/* Carousel Section */}
           <View style={styles.carouselSection}>
@@ -401,13 +401,13 @@ const HomeScreen = ({ navigation }) => {
                 />
               ))}
             </View>
-          </View>
+          </View >
 
           {/* Content Panel (White) */}
-          <View style={styles.contentPanel}>
+          < View style={styles.contentPanel} >
 
             {/* Search and Filter */}
-            <View style={styles.searchRow}>
+            < View style={styles.searchRow} >
               <View style={styles.searchBox}>
                 <Ionicons name="search-outline" size={22} color="#888" />
                 <TextInput
@@ -435,10 +435,10 @@ const HomeScreen = ({ navigation }) => {
                 <Ionicons name="options-outline" size={20} color="#1B4332" />
                 <Text style={styles.filterLabel}>Filter</Text>
               </TouchableOpacity>
-            </View>
+            </View >
 
             {/* Latest Blogs */}
-            <Text style={styles.sectionHeader}>Latest Blogs</Text>
+            < Text style={styles.sectionHeader} > Latest Blogs</Text >
 
             <ScrollView
               horizontal
@@ -498,12 +498,12 @@ const HomeScreen = ({ navigation }) => {
             </ScrollView>
 
             <View style={{ height: 80 }} />
-          </View>
-        </ScrollView>
-      </LinearGradient>
+          </View >
+        </ScrollView >
+      </LinearGradient >
 
       {/* Filter Modal */}
-      <Modal
+      < Modal
         visible={isFilterVisible}
         transparent={true}
         animationType="fade"
@@ -545,10 +545,10 @@ const HomeScreen = ({ navigation }) => {
             </TouchableWithoutFeedback>
           </View>
         </TouchableWithoutFeedback>
-      </Modal>
+      </Modal >
 
       {/* Login Prompt Modal for Guests */}
-      <Modal
+      < Modal
         visible={isLoginPromptVisible}
         transparent={true}
         animationType="fade"
@@ -591,8 +591,8 @@ const HomeScreen = ({ navigation }) => {
             </LinearGradient>
           </View>
         </TouchableOpacity>
-      </Modal>
-    </SafeAreaView>
+      </Modal >
+    </SafeAreaView >
   );
 };
 

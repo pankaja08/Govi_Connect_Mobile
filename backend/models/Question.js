@@ -28,6 +28,7 @@ const questionSchema = new mongoose.Schema({
   },
   authorName: { type: String },
   authorRole: { type: String, default: 'User' },
+  images: [{ type: String }],
   answers: [answerSchema],
   answerCount: { type: Number, default: 0 }
 }, { timestamps: true });

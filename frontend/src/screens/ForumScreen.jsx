@@ -15,12 +15,15 @@ import {
   KeyboardAvoidingView,
   Animated,
   Easing,
+  Image,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { StatusBar } from 'expo-status-bar';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
 import apiClient from '../api/client';
+import * as ImagePicker from 'expo-image-picker';
+import CustomImagePicker from '../components/CustomImagePicker';
 
 const CATEGORIES = [
   'General Farming',
@@ -127,6 +130,14 @@ const QuestionCard = ({ question, currentUserId, onDelete, onEdit, onPress }) =>
           <CategoryBadge category={question.category} />
         </View>
 
+        {question.images && question.images.length > 0 && (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.imageScroll}>
+            {question.images.map((img, idx) => (
+              <Image key={idx} source={{ uri: img }} style={styles.cardImage} />
+            ))}
+          </ScrollView>
+        )}
+
         <View style={styles.cardFooterInfo}>
           <View style={styles.answerCountBubble}>
             <Ionicons name="chatbubbles-outline" size={14} color="#2E7D32" style={{ marginRight: 6 }} />
@@ -232,9 +243,33 @@ const ForumScreen = () => {
   const [askText, setAskText] = useState('');
   const [askCategory, setAskCategory] = useState('');
   const [submittingQuestion, setSubmittingQuestion] = useState(false);
+  const [selectedImages, setSelectedImages] = useState([]);
   const [userRole, setUserRole] = useState(null);
   const [currentUserId, setCurrentUserId] = useState(null);
   const [submittingAnswer, setSubmittingAnswer] = useState(false);
+
+  const handlePickImage = async () => {
+    if (selectedImages.length >= 5) {
+      Alert.alert('Limit Reached', 'You can only upload up to 5 images.');
+      return;
+    }
+
+    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      Alert.alert('Permission Denied', 'Permission to access gallery is required!');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      quality: 0.7,
+    });
+
+    if (!result.canceled) {
+      setSelectedImages([...selectedImages, result.assets[0].uri]);
+    }
+  };
 
   useEffect(() => {
     const timer = setTimeout(() => setDebouncedSearch(searchText), 400);
@@ -281,9 +316,14 @@ const ForumScreen = () => {
     }
     try {
       setSubmittingQuestion(true);
-      await apiClient.post('/forum', { text: askText.trim(), category: askCategory });
+      await apiClient.post('/forum', { 
+        text: askText.trim(), 
+        category: askCategory,
+        images: selectedImages 
+      });
       setAskText('');
       setAskCategory('');
+      setSelectedImages([]);
       fetchQuestions();
       Alert.alert('Success', 'Your question has been posted!');
     } catch (err) {
@@ -441,10 +481,21 @@ const ForumScreen = () => {
           {/* Ask Card (Farmer Only) */}
           {userRole !== 'Expert' && (
             <View style={styles.askContainer}>
-              <TouchableOpacity style={styles.categoryPickerBtn} onPress={() => setShowCategoryPicker(!showCategoryPicker)}>
-                <Text style={[styles.categoryPickerText, { color: askCategory ? '#2E7D32' : '#999' }]}>{askCategory || 'Select Category'}</Text>
-                <Ionicons name="chevron-down" size={18} color="#333" />
-              </TouchableOpacity>
+              <View style={styles.topRow}>
+                <TouchableOpacity style={styles.categoryPickerBtn} onPress={() => setShowCategoryPicker(!showCategoryPicker)}>
+                  <Text style={[styles.categoryPickerText, { color: askCategory ? '#2E7D32' : '#999' }]} numberOfLines={1}>
+                    {askCategory || 'Select Category'}
+                  </Text>
+                  <Ionicons name="chevron-down" size={18} color="#333" />
+                </TouchableOpacity>
+
+                <TouchableOpacity style={styles.topUploadBtn} onPress={handlePickImage}>
+                  <View style={styles.topUploadIconCircle}>
+                    <Ionicons name="image-outline" size={24} color="#2E7D32" />
+                  </View>
+                </TouchableOpacity>
+              </View>
+
               {showCategoryPicker && (
                 <View style={styles.categoryList}>
                   {CATEGORIES.map(c => (
@@ -455,6 +506,10 @@ const ForumScreen = () => {
                 </View>
               )}
               <TextInput style={styles.askInput} placeholder="What's your question?" placeholderTextColor="#777" value={askText} onChangeText={setAskText} multiline />
+              
+              {/* Image Picker Previews */}
+              <CustomImagePicker images={selectedImages} onImagesChange={setSelectedImages} showAddButton={false} />
+
               <TouchableOpacity style={styles.askSubmitBtn} onPress={handleAskQuestion}>
                 <Text style={styles.askSubmitBtnText}>Post Question</Text>
               </TouchableOpacity>
@@ -517,15 +572,18 @@ const styles = StyleSheet.create({
   chipActive: { backgroundColor: '#2E7D32' },
   chipText: { fontSize: 12, color: '#666', fontWeight: 'bold' },
   chipTextActive: { color: '#fff' },
-  askContainer: { backgroundColor: '#fff', marginHorizontal: 16, borderRadius: 16, padding: 15, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4 },
-  categoryPickerBtn: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 12, borderRadius: 10, borderWidth: 1.5, borderColor: '#2E7D32', marginBottom: 16 },
-  categoryPickerText: { fontSize: 14, fontWeight: '600' },
-  categoryList: { backgroundColor: '#fff', borderRadius: 10, elevation: 2, marginBottom: 10 },
-  categoryItem: { padding: 12, borderBottomWidth: 1, borderBottomColor: '#f1f1f1' },
-  categoryItemText: { fontSize: 13, color: '#333' },
-  askInput: { backgroundColor: '#fff', borderRadius: 10, padding: 12, minHeight: 90, marginBottom: 15, textAlignVertical: 'top', borderWidth: 1, borderColor: '#000' },
-  askSubmitBtn: { backgroundColor: '#2E7D32', padding: 15, borderRadius: 10, alignItems: 'center' },
-  askSubmitBtnText: { color: '#fff', fontWeight: 'bold' },
+  askContainer: { backgroundColor: '#fff', marginHorizontal: 16, borderRadius: 16, padding: 20, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, marginTop: 10 },
+  topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 },
+  categoryPickerBtn: { flex: 1, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', backgroundColor: '#fff', padding: 14, borderRadius: 12, borderWidth: 1.5, borderColor: '#2E7D32', marginRight: 12 },
+  topUploadBtn: { width: 54, height: 54, borderRadius: 27, borderWidth: 1.5, borderColor: '#333', justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
+  topUploadIconCircle: { justifyContent: 'center', alignItems: 'center' },
+  categoryPickerText: { fontSize: 14, fontWeight: '500', flex: 1 },
+  categoryList: { backgroundColor: '#fff', borderRadius: 10, elevation: 4, marginBottom: 10, borderWidth: 1, borderColor: '#eee' },
+  categoryItem: { padding: 15, borderBottomWidth: 1, borderBottomColor: '#f1f1f1' },
+  categoryItemText: { fontSize: 14, color: '#333' },
+  askInput: { backgroundColor: '#fff', borderRadius: 12, padding: 15, minHeight: 120, marginBottom: 15, textAlignVertical: 'top', borderWidth: 1.5, borderColor: '#333', fontSize: 15 },
+  askSubmitBtn: { backgroundColor: '#2E7D32', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 10 },
+  askSubmitBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
   feedHeader: { paddingHorizontal: 16, marginTop: 10, marginBottom: 10 },
   feedTitle: { fontSize: 18, fontWeight: 'bold', color: '#1B3A1F' },
   questionCard: { backgroundColor: '#fff', marginHorizontal: 16, marginBottom: 16, padding: 16, borderRadius: 16, elevation: 3, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, borderLeftWidth: 6, borderLeftColor: '#2E7D32' },
@@ -594,6 +652,8 @@ const styles = StyleSheet.create({
   answerInputContainer: { flexDirection: 'row', padding: 16, backgroundColor: '#fff', borderTopWidth: 1, borderTopColor: '#eee', alignItems: 'center', width: '100%' },
   detailInput: { flex: 1, backgroundColor: '#f5f5f5', borderRadius: 20, paddingHorizontal: 15, paddingVertical: 10, maxHeight: 100 },
   sendBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: '#2E7D32', justifyContent: 'center', alignItems: 'center', marginLeft: 10 },
+  imageScroll: { marginTop: 12 },
+  cardImage: { width: 100, height: 100, borderRadius: 10, marginRight: 10 },
 });
 
 export default ForumScreen;

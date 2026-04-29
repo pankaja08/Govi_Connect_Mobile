@@ -42,7 +42,7 @@ exports.getQuestions = async (req, res) => {
 // POST a new question
 exports.createQuestion = async (req, res) => {
   try {
-    const { text, category } = req.body;
+    const { text, category, images } = req.body;
     const userId = req.user?._id;
 
     if (!userId) return res.status(401).json({ status: 'fail', message: 'Not authenticated' });
@@ -54,6 +54,7 @@ exports.createQuestion = async (req, res) => {
     const question = await Question.create({
       text: text.trim(),
       category,
+      images: images || [],
       author: userId,
       authorName: user?.name || user?.username || 'User',
       authorRole: user?.role || 'User',
