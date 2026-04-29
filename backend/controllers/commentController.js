@@ -1,5 +1,6 @@
 const Comment = require('../models/Comment');
 const Blog = require('../models/Blog');
+const Notification = require('../models/Notification');
 
 // ───────────────────────────────────────────────
 // GET /api/blogs/:id/comments
@@ -57,6 +58,27 @@ exports.addComment = async (req, res) => {
 
     // Populate user info before returning
     const populated = await Comment.findById(comment._id).populate('userId', 'name username');
+
+    // ── Notification: expert replied to a user's comment ──────────────────
+    // Only create a notification if:
+    // 1. This is a reply (has a parentId)
+    // 2. The person replying is the blog's expert
+    if (parentId && isOwner) {
+      const parentComment = await Comment.findById(parentId);
+      // Only notify if the parent comment belongs to a DIFFERENT user (not the expert themselves)
+      if (parentComment && parentComment.userId.toString() !== req.user._id.toString()) {
+        await Notification.create({
+          userId: parentComment.userId,        // Recipient: the user who wrote the original comment
+          senderId: req.user._id,              // Sender: the expert
+          blogId: blog._id,
+          commentId: comment._id,
+          type: 'expert_reply',
+          title: '💬 Expert Replied to Your Comment',
+          message: `An expert replied to your comment on "${blog.title}": "${content.trim().substring(0, 80)}${content.trim().length > 80 ? '...' : ''}"`
+        });
+      }
+    }
+    // ──────────────────────────────────────────────────────────────────────
 
     res.status(201).json({
       success: true,
