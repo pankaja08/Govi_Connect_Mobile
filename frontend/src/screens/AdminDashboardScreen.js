@@ -6,7 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import apiClient from '../api/client';
 import CountUp from '../components/CountUp';
 import CustomDonutChart from '../components/CustomDonutChart';
-import CustomBarChart from '../components/CustomBarChart';
+import GeoDistributionChart from '../components/GeoDistributionChart';
 
 
 const { width } = Dimensions.get('window');
@@ -144,8 +144,13 @@ const AdminDashboardScreen = ({ navigation }) => {
 
           {/* Geographical Distribution dynamic Chart */}
           <View style={styles.cardLarge}>
-            <Text style={styles.cardTitle}>Geographical Distribution</Text>
-            <CustomBarChart data={stats.geographicStats} />
+            <View style={styles.geoCardHeader}>
+              <Text style={styles.cardTitle}>Geographical Distribution</Text>
+              <View style={styles.geoBadge}>
+                <Text style={styles.geoBadgeText}>Farmers by District</Text>
+              </View>
+            </View>
+            <GeoDistributionChart data={stats.geographicStats} />
           </View>
         </View>
 
@@ -367,7 +372,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 20,
+    marginBottom: 0,
+  },
+  geoCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  geoBadge: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  geoBadgeText: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#1B7A43',
+    letterSpacing: 0.3,
+    textTransform: 'uppercase',
   },
   // Fake Pie Chart Styles
   pieContainer: {
