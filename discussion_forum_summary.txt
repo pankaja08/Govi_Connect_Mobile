@@ -1,0 +1,51 @@
+DISCUSSION FORUM MODULE SUMMARY - GOVI CONNECT MOBILE
+
+This document provides a comprehensive overview of the Discussion Forum implementation, covering both User and Expert functionalities, backend structure, and specific UI screen files.
+
+-------------------------------------------------------------------------
+1. UI SCREEN FILES (EXCLUSIVELY FOR DISCUSSION FORUM)
+-------------------------------------------------------------------------
+The following files in 'frontend/src/screens/' are dedicated to the forum UI:
+
+- ForumScreen.jsx: The main forum landing page. Includes the question feed, search bar, category filtering, and sorting (Newest, Oldest, Most Answered, My Questions).
+- ForumQ&AScreen.jsx: Detailed view of a single question. Displays the question content, expert answers, and community comments.
+- ForumEditQuestionScreen.jsx: Allows users to modify their existing questions.
+- ExpertEditAnswerScreen.jsx: Allows verified experts to modify their previous answers.
+
+*Note: ExpertDashboardScreen.jsx is also used by experts to find and respond to forum questions.*
+
+-------------------------------------------------------------------------
+2. USER SIDE FUNCTIONALITIES
+-------------------------------------------------------------------------
+- View Questions: Browse a feed of community-posted agricultural questions.
+- Search & Filter: Search questions by keywords and filter by categories (e.g., Paddy, Vegetables, Fruits).
+- Sorting: Sort questions by date (Newest/Oldest) or engagement (Most Answered).
+- My Questions: Quick access to view only the questions posted by the logged-in user.
+- Post Questions: Create new forum posts with titles, categories, and descriptions.
+- Edit/Delete: Users can manage their own questions.
+- Commenting: Users can add comments to any question to engage in community discussion.
+- Navigation: Deep linking from notifications or home screen directly to specific questions.
+
+-------------------------------------------------------------------------
+3. EXPERT SIDE FUNCTIONALITIES
+-------------------------------------------------------------------------
+- Expert Dashboard: A specialized view for experts to see unanswered questions categorized as "pending."
+- Expert Answers: Experts can provide official "Expert Answers" which are highlighted in the UI to distinguish them from general user comments.
+- Edit Answers: Ability for experts to refine or update their provided solutions.
+- Identification: Backend logic ensures that only users with the 'expert' role can provide these verified answers.
+
+-------------------------------------------------------------------------
+4. BACKEND STRUCTURE
+-------------------------------------------------------------------------
+The following backend files handle the forum logic and data:
+
+- backend/models/Question.js: MongoDB schema for forum questions, including fields for title, category, content, author, and an array for answers/comments.
+- backend/routes/forumRoutes.js: API endpoints for fetching questions, creating posts, updating content, and managing answers.
+- backend/controllers/forumController.js: Contains the business logic for filtering questions, role-based permissions (User vs. Expert), and CRUD operations.
+
+-------------------------------------------------------------------------
+5. API INTEGRATION (FRONTEND)
+-------------------------------------------------------------------------
+- frontend/src/api/client.js: Configured with dynamic IP handling to allow physical device testing via Expo Go.
+- frontend/src/api/forumApi.js: Service file for making API calls related to questions and categories.
+- frontend/src/api/commentApi.js: Service file for handling question comments and expert answers.

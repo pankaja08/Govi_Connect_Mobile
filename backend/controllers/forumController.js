@@ -42,19 +42,29 @@ exports.getQuestions = async (req, res) => {
 // POST a new question
 exports.createQuestion = async (req, res) => {
   try {
-    const { text, category, images } = req.body;
+    console.log('📦 Create Question Request Received');
+    console.log('Body:', req.body);
+    console.log('Files:', req.files);
+
+    const { text, category } = req.body;
     const userId = req.user?._id;
 
     if (!userId) return res.status(401).json({ status: 'fail', message: 'Not authenticated' });
     if (!text || text.trim().length < 10) return res.status(400).json({ status: 'fail', message: 'Question must be at least 10 characters' });
     if (!category || !CATEGORIES.includes(category)) return res.status(400).json({ status: 'fail', message: 'Invalid category' });
 
+    // Extract Cloudinary URLs from uploaded files
+    let imageUrls = [];
+    if (req.files && req.files.length > 0) {
+      imageUrls = req.files.map(file => file.path); // file.path contains the Cloudinary secure_url
+    }
+
     const user = await User.findById(userId);
 
     const question = await Question.create({
       text: text.trim(),
       category,
-      images: images || [],
+      images: imageUrls,
       author: userId,
       authorName: user?.name || user?.username || 'User',
       authorRole: user?.role || 'User',

@@ -324,18 +324,48 @@ const ForumScreen = () => {
     }
     try {
       setSubmittingQuestion(true);
-      await apiClient.post('/forum', { 
-        text: askText.trim(), 
-        category: askCategory,
-        images: selectedImages 
-      });
-      setAskText('');
-      setAskCategory('');
-      setSelectedImages([]);
-      fetchQuestions();
-      Alert.alert('Success', 'Your question has been posted!');
+
+      const formData = new FormData();
+      formData.append('text', askText.trim());
+      formData.append('category', askCategory);
+
+      if (selectedImages.length > 0) {
+        for (let i = 0; i < selectedImages.length; i++) {
+          const uri = selectedImages[i];
+          const filename = uri.split('/').pop();
+          const match = /\.(\w+)$/.exec(filename);
+          const type = match ? `image/${match[1]}` : `image/jpeg`;
+
+          if (Platform.OS === 'web') {
+            // Web requires a real Blob/File object
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            formData.append('images', blob, filename || `image_${i}.jpg`);
+          } else {
+            // Mobile handles the uri object
+            formData.append('images', {
+              uri: Platform.OS === 'ios' ? uri.replace('file://', '') : uri,
+              name: filename || `image_${i}.jpg`,
+              type: type,
+            });
+          }
+        }
+      }
+
+      // Switch back to apiClient but without the manual Content-Type header
+      const res = await apiClient.post('/forum', formData);
+
+      if (res.status === 201 || res.status === 200) {
+        setAskText('');
+        setAskCategory('');
+        setSelectedImages([]);
+        fetchQuestions();
+        Alert.alert('Success', 'Your question has been posted!');
+      }
     } catch (err) {
-      Alert.alert('Error', 'Could not post question.');
+      console.log('Post error:', err.response?.data || err.message);
+      const errorMsg = err.response?.data?.message || 'Could not post question.';
+      Alert.alert('Error', errorMsg);
     } finally {
       setSubmittingQuestion(false);
     }

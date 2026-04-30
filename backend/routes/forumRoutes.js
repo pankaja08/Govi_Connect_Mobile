@@ -12,12 +12,14 @@ const {
   deleteAnswer
 } = require('../controllers/forumController');
 
+const upload = require('../middleware/upload');
+
 // Public routes
 router.get('/common', getCommonQuestions);
 router.get('/', protect, getQuestions);
 
 // Protected routes
-router.post('/', protect, createQuestion);
+router.post('/', protect, upload.array('images', 5), createQuestion);
 router.post('/:questionId/answers', protect, addAnswer);
 router.patch('/:questionId/answers/:answerId', protect, editAnswer);
 router.delete('/:questionId/answers/:answerId', protect, deleteAnswer);
