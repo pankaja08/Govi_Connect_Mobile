@@ -175,8 +175,8 @@ exports.deleteAnswer = async (req, res) => {
       return res.status(403).json({ status: 'fail', message: 'Not authorized to delete this answer' });
     }
 
-    const ONE_HOUR = 60 * 60 * 1000;
-    if (Date.now() - new Date(answer.createdAt).getTime() > ONE_HOUR) {
+    const isExpert = req.user?.role === 'Expert';
+    if (!isExpert && (Date.now() - new Date(answer.createdAt).getTime() > 60 * 60 * 1000)) {
       return res.status(403).json({ status: 'fail', message: 'Edit/delete window (1 hour) has passed' });
     }
 
@@ -207,8 +207,8 @@ exports.editAnswer = async (req, res) => {
       return res.status(403).json({ status: 'fail', message: 'Not authorized to edit this answer' });
     }
 
-    const ONE_HOUR = 60 * 60 * 1000;
-    if (Date.now() - new Date(answer.createdAt).getTime() > ONE_HOUR) {
+    const isExpert = req.user?.role === 'Expert';
+    if (!isExpert && (Date.now() - new Date(answer.createdAt).getTime() > 60 * 60 * 1000)) {
       return res.status(403).json({ status: 'fail', message: 'Edit/delete window (1 hour) has passed' });
     }
 

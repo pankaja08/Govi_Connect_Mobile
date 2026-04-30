@@ -358,12 +358,29 @@ const ForumScreen = () => {
   };
 
   const handleDeleteAnswer = async (questionId, answerId) => {
-    try {
-      const res = await apiClient.delete(`/forum/${questionId}/answers/${answerId}`);
-      const updatedQ = res.data.data.question;
-      setQuestions(prev => prev.map(q => q._id === questionId ? updatedQ : q));
-    } catch (err) {
-      Alert.alert('Error', 'Could not delete answer.');
+    const performDelete = async () => {
+      try {
+        const res = await apiClient.delete(`/forum/${questionId}/answers/${answerId}`);
+        const updatedQ = res.data.data.question;
+        setQuestions(prev => prev.map(q => q._id === questionId ? updatedQ : q));
+        if (Platform.OS === 'web') window.alert('Answer deleted successfully.');
+        else Alert.alert('Success', 'Answer deleted successfully.');
+      } catch (err) {
+        const msg = err.response?.data?.message || 'Could not delete answer.';
+        if (Platform.OS === 'web') window.alert(msg);
+        else Alert.alert('Error', msg);
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to delete your answer?')) {
+        performDelete();
+      }
+    } else {
+      Alert.alert('Delete Answer', 'Are you sure you want to delete your answer?', [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', style: 'destructive', onPress: performDelete }
+      ]);
     }
   };
 
