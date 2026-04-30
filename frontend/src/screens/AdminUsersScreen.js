@@ -19,6 +19,153 @@ import apiClient from '../api/client';
 
 const { width } = Dimensions.get('window');
 
+// ─── Sri Lanka Provinces & Districts ────────────────────────────────────────
+const SRI_LANKA_DATA = {
+  'Western': ['Colombo', 'Gampaha', 'Kalutara'],
+  'Central': ['Kandy', 'Matale', 'Nuwara Eliya'],
+  'Southern': ['Galle', 'Matara', 'Hambantota'],
+  'Northern': ['Jaffna', 'Kilinochchi', 'Mannar', 'Mullaitivu', 'Vavuniya'],
+  'Eastern': ['Ampara', 'Batticaloa', 'Trincomalee'],
+  'North Western': ['Kurunegala', 'Puttalam'],
+  'North Central': ['Anuradhapura', 'Polonnaruwa'],
+  'Uva': ['Badulla', 'Monaragala'],
+  'Sabaragamuwa': ['Kegalle', 'Ratnapura'],
+};
+
+const ALL_PROVINCES = Object.keys(SRI_LANKA_DATA);
+
+// Flat list of all unique districts (sorted)
+const ALL_DISTRICTS = [...new Set(Object.values(SRI_LANKA_DATA).flat())].sort();
+
+// ─── Custom Dropdown Picker Component ───────────────────────────────────────
+const DropdownPicker = ({ label, required, value, options, onSelect, placeholder, icon }) => {
+  const [open, setOpen] = useState(false);
+
+  return (
+    <View style={dropdownStyles.wrapper}>
+      <Text style={dropdownStyles.label}>
+        {label} {required && <Text style={dropdownStyles.required}>*</Text>}
+      </Text>
+
+      {/* Trigger row */}
+      <TouchableOpacity
+        style={[dropdownStyles.trigger, open && dropdownStyles.triggerOpen]}
+        onPress={() => setOpen((prev) => !prev)}
+        activeOpacity={0.85}
+      >
+        <Ionicons name={icon || 'map-outline'} size={18} color="#115C39" style={dropdownStyles.triggerIcon} />
+        <Text style={[dropdownStyles.triggerText, !value && dropdownStyles.placeholder]}>
+          {value || placeholder}
+        </Text>
+        <Ionicons
+          name={open ? 'chevron-up' : 'chevron-down'}
+          size={16}
+          color={open ? '#115C39' : '#9CA3AF'}
+        />
+      </TouchableOpacity>
+
+      {/* Inline expanded list */}
+      {open && (
+        <View style={dropdownStyles.inlineList}>
+          {options.map((item, idx) => {
+            const isSelected = item === value;
+            const isLast = idx === options.length - 1;
+            return (
+              <TouchableOpacity
+                key={item}
+                style={[
+                  dropdownStyles.inlineOption,
+                  isSelected && dropdownStyles.inlineOptionSelected,
+                  isLast && dropdownStyles.inlineOptionLast,
+                ]}
+                onPress={() => {
+                  onSelect(item);
+                  setOpen(false);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    dropdownStyles.inlineOptionText,
+                    isSelected && dropdownStyles.inlineOptionTextSelected,
+                  ]}
+                >
+                  {item}
+                </Text>
+                {isSelected && (
+                  <Ionicons name="checkmark-circle" size={18} color="#115C39" />
+                )}
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+};
+
+const dropdownStyles = StyleSheet.create({
+  wrapper: { marginBottom: 18 },
+  label: { fontSize: 14, fontWeight: '700', color: '#4B5563' },
+  required: { color: '#EF4444' },
+
+  // Trigger button
+  trigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 13,
+    marginTop: 6,
+  },
+  triggerOpen: {
+    borderColor: '#115C39',
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+    borderBottomWidth: 0,
+  },
+  triggerIcon: { marginRight: 10 },
+  triggerText: { flex: 1, fontSize: 14, color: '#1F2937' },
+  placeholder: { color: '#9CA3AF' },
+
+  // Inline list
+  inlineList: {
+    borderWidth: 1,
+    borderTopWidth: 0,
+    borderColor: '#115C39',
+    borderBottomLeftRadius: 10,
+    borderBottomRightRadius: 10,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+  },
+  inlineOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+  },
+  inlineOptionLast: {
+    borderBottomWidth: 0,
+  },
+  inlineOptionSelected: {
+    backgroundColor: '#F0FDF4',
+  },
+  inlineOptionText: {
+    fontSize: 14,
+    color: '#374151',
+  },
+  inlineOptionTextSelected: {
+    color: '#115C39',
+    fontWeight: '700',
+  },
+});
+
 const AdminUsersScreen = ({ navigation }) => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -424,26 +571,42 @@ const AdminUsersScreen = ({ navigation }) => {
                   </View>
                 </View>
 
-                <View style={[styles.row, { gap: 10 }]}>
-                    <View style={[styles.inputWrapper, { flex: 1 }]}>
-                        <Text style={styles.label}>Province <Text style={styles.required}>*</Text></Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Province"
-                            value={formData.province}
-                            onChangeText={(val) => setFormData({ ...formData, province: val })}
-                        />
-                    </View>
-                    <View style={[styles.inputWrapper, { flex: 1 }]}>
-                        <Text style={styles.label}>District <Text style={styles.required}>*</Text></Text>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="District"
-                            value={formData.district}
-                            onChangeText={(val) => setFormData({ ...formData, district: val })}
-                        />
-                    </View>
-                </View>
+                {/* Province Dropdown */}
+                <DropdownPicker
+                  label="Province"
+                  required
+                  value={formData.province}
+                  options={ALL_PROVINCES}
+                  placeholder="Select Province"
+                  icon="map-outline"
+                  onSelect={(val) => {
+                    // When province changes, reset district if it no longer belongs
+                    const validDistricts = SRI_LANKA_DATA[val] || [];
+                    const keepDistrict = validDistricts.includes(formData.district)
+                      ? formData.district
+                      : '';
+                    setFormData({ ...formData, province: val, district: keepDistrict });
+                  }}
+                />
+
+                {/* District Dropdown — filtered by selected province */}
+                <DropdownPicker
+                  label="District"
+                  required
+                  value={formData.district}
+                  options={
+                    formData.province && SRI_LANKA_DATA[formData.province]
+                      ? SRI_LANKA_DATA[formData.province]
+                      : ALL_DISTRICTS
+                  }
+                  placeholder={
+                    formData.province
+                      ? `Select District in ${formData.province}`
+                      : 'Select Province first'
+                  }
+                  icon="location-outline"
+                  onSelect={(val) => setFormData({ ...formData, district: val })}
+                />
 
                 <View style={styles.inputWrapper}>
                   <Text style={styles.label}>Target Role</Text>
