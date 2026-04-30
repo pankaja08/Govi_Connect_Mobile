@@ -68,13 +68,15 @@ exports.toggleSaveBlog = async (req, res) => {
 
 exports.getDashboardStats = async (req, res) => {
   try {
-    const totalUsers = await User.countDocuments();
     const farmers = await User.countDocuments({ role: 'User' });
     const agriOfficers = await User.countDocuments({ 
       role: 'Expert', 
       status: { $nin: ['Pending', 'Rejected'] } 
     });
     const pendingExperts = await User.countDocuments({ role: 'Expert', status: 'Pending' });
+
+    // Total = farmers + active agri officers + pending experts (excludes Admins)
+    const totalUsers = farmers + agriOfficers + pendingExperts;
 
     // Get geographical distribution of Farmers
     const geographicStats = await User.aggregate([
