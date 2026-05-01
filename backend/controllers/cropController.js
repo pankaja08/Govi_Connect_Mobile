@@ -103,15 +103,27 @@ exports.updateAnalytics = async (req, res) => {
   try {
     const { yieldAmount, incomeAmount } = req.body;
     
-    const crop = await Crop.findOneAndUpdate(
-      { _id: req.params.id, user: req.user.id },
-      { yieldAmount, incomeAmount },
-      { new: true, runValidators: true }
-    );
+    const crop = await Crop.findOne({ _id: req.params.id, user: req.user.id });
 
     if (!crop) {
       return res.status(404).json({ message: 'No crop found with that ID' });
     }
+
+    if (crop.harvestExpectedDate) {
+      const today = new Date();
+      const harvestDate = new Date(crop.harvestExpectedDate);
+      
+      today.setHours(0, 0, 0, 0);
+      harvestDate.setHours(0, 0, 0, 0);
+
+      if (today.getTime() < harvestDate.getTime()) {
+        return res.status(400).json({ message: 'You cannot update yield until the expected harvest date is reached.' });
+      }
+    }
+
+    crop.yieldAmount = yieldAmount;
+    crop.incomeAmount = incomeAmount;
+    await crop.save({ validateBeforeSave: true });
 
     res.status(200).json({
       status: 'success',

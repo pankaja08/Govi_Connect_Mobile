@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, TextInput, ScrollView, Platform } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, ActivityIndicator, Alert, TextInput, ScrollView, Platform, Pressable } from 'react-native';
 import Modal from 'react-native-modal';
 import { Calendar } from 'react-native-calendars';
 import { Picker } from '@react-native-picker/picker';
@@ -7,11 +7,14 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Ionicons } from '@expo/vector-icons';
 import apiClient from '../api/client';
 import CropCard from '../components/CropCard';
+import Animated, { FadeInUp, FadeInDown, useSharedValue, useAnimatedStyle, withSpring } from 'react-native-reanimated';
+
+const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
 const getSeasonColor = (season) => {
   switch (season) {
     case 'Yala': return '#10B981';
-    case 'Maha': return '#EAB308';
+    case 'Maha': return '#F59E0B';
     default: return '#3b82f6';
   }
 };
@@ -77,6 +80,12 @@ const FarmerTrackerScreen = () => {
   const [yieldForm, setYieldForm] = useState({ yieldAmount: '', incomeAmount: '' });
   const [datePickerOpen, setDatePickerOpen] = useState({ open: false, field: null });
 
+  // Add Button Animation
+  const buttonScale = useSharedValue(1);
+  const buttonAnimatedStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: buttonScale.value }]
+  }));
+
   useEffect(() => {
     fetchCrops();
   }, []);
@@ -115,7 +124,6 @@ const FarmerTrackerScreen = () => {
   const handleSaveCrop = async () => {
     if (!newCropForm.cropName || !newCropForm.fieldSize) return showAlert('Validation Error', 'Please fill required fields.');
     
-    // Add safety if invalid instances are passed
     const pDate = new Date(newCropForm.plantedDate || new Date());
     const hDate = new Date(newCropForm.harvestExpectedDate || new Date());
     pDate.setHours(0, 0, 0, 0);
@@ -126,10 +134,7 @@ const FarmerTrackerScreen = () => {
     }
     
     try {
-      const payload = {
-        ...newCropForm,
-        fieldSize: Number(newCropForm.fieldSize)
-      };
+      const payload = { ...newCropForm, fieldSize: Number(newCropForm.fieldSize) };
 
       if (currentCrop) {
         const res = await apiClient.put(`/farm/crops/${currentCrop._id}`, payload);
@@ -168,7 +173,6 @@ const FarmerTrackerScreen = () => {
 
   const handleSaveActivity = async () => {
     if (!newActivityForm.activityName) return showAlert('Error', 'Activity name is required');
-
     const aDate = new Date(newActivityForm.activityDate || new Date());
     const pDate = new Date(currentCrop.plantedDate);
     aDate.setHours(0, 0, 0, 0);
@@ -200,6 +204,19 @@ const FarmerTrackerScreen = () => {
   };
 
   const openYieldModal = (crop) => {
+    if (crop.harvestExpectedDate) {
+      const today = new Date();
+      const harvestDate = new Date(crop.harvestExpectedDate);
+      
+      today.setHours(0, 0, 0, 0);
+      harvestDate.setHours(0, 0, 0, 0);
+
+      if (today.getTime() < harvestDate.getTime()) {
+        const formattedDate = harvestDate.toLocaleDateString();
+        return showAlert('Action Not Allowed', `You can't update yield until the expected harvest date (${formattedDate}).`);
+      }
+    }
+
     setCurrentCrop(crop);
     setYieldForm({ yieldAmount: String(crop.yieldAmount || ''), incomeAmount: String(crop.incomeAmount || '') });
     setYieldModalVisible(true);
@@ -223,24 +240,20 @@ const FarmerTrackerScreen = () => {
 
     crops.forEach(crop => {
       if (crop.plantedDate) {
-        const planted = safeDateStr(crop.plantedDate);
-        if (planted === clickedDate) {
+        if (safeDateStr(crop.plantedDate) === clickedDate) {
           dayEvents.push({ id: `p-${crop._id}`, type: 'Planting', title: `Planted ${crop.cropName}`, description: `Field Size: ${crop.fieldSize} Acres`, color: '#16a34a' });
         }
       }
       
       if (crop.harvestExpectedDate) {
-        const harvest = safeDateStr(crop.harvestExpectedDate);
-        if (harvest === clickedDate) {
+        if (safeDateStr(crop.harvestExpectedDate) === clickedDate) {
           dayEvents.push({ id: `h-${crop._id}`, type: 'Harvest', title: `Expected Harvest: ${crop.cropName}`, description: `Season: ${crop.season}`, color: '#ca8a04' });
         }
       }
 
       if (crop.activities && Array.isArray(crop.activities)) {
         crop.activities.forEach(act => {
-          if (act.activityDate) {
-             const actDate = safeDateStr(act.activityDate);
-             if (actDate === clickedDate) {
+          if (act.activityDate && safeDateStr(act.activityDate) === clickedDate) {
                dayEvents.push({ 
                  id: act._id || Math.random().toString(), 
                  type: 'Activity', 
@@ -249,7 +262,6 @@ const FarmerTrackerScreen = () => {
                  color: '#2563eb',
                  isCompleted: act.isCompleted
                });
-             }
           }
         });
       }
@@ -270,7 +282,6 @@ const FarmerTrackerScreen = () => {
         const harvest = safeDateStr(crop.harvestExpectedDate);
         if (harvest) marked[harvest] = { ...marked[harvest], marked: true, dotColor: '#ca8a04' };
       }
-      
       if (crop.activities && Array.isArray(crop.activities)) {
         crop.activities.forEach(act => {
           if (act.activityDate) {
@@ -294,28 +305,34 @@ const FarmerTrackerScreen = () => {
       <FlatList
         data={crops}
         keyExtractor={item => item._id}
+        showsVerticalScrollIndicator={false}
         ListHeaderComponent={() => (
           <>
-            <View style={styles.header}>
+            <Animated.View entering={FadeInDown.duration(600).springify()} style={styles.header}>
               <Text style={styles.headerTitle}>Farm Performance Analytics</Text>
-              <TouchableOpacity style={styles.addButton} onPress={() => openCropModal()}>
+              <AnimatedPressable 
+                style={[styles.addButton, buttonAnimatedStyle]} 
+                onPress={() => openCropModal()}
+                onPressIn={() => buttonScale.value = withSpring(0.9)}
+                onPressOut={() => buttonScale.value = withSpring(1)}
+              >
                 <Ionicons name="add" size={20} color="#fff" style={{ marginRight: 5 }} />
                 <Text style={styles.addButtonText}>Log New Crop</Text>
-              </TouchableOpacity>
-            </View>
+              </AnimatedPressable>
+            </Animated.View>
 
             {/* Analytics Card */}
-            <View style={styles.analyticsCard}>
+            <Animated.View entering={FadeInDown.delay(100).duration(600).springify()} style={styles.analyticsCard}>
               <View style={styles.analyticsHeader}>
                 <View style={{ flex: 1, paddingRight: 12 }}>
-                  <Text style={styles.analyticsTitle}>Season Performance Analysis</Text>
-                  <Text style={styles.analyticsSub}>View detailed yields and income by agricultural season</Text>
+                  <Text style={styles.analyticsTitle}>Season Analysis</Text>
+                  <Text style={styles.analyticsSub}>View detailed yields and income</Text>
                 </View>
                 <View style={styles.pickerContainerSmall}>
                   <Picker
                     selectedValue={selectedSeason}
                     style={styles.pickerSmall}
-                    itemStyle={{ fontSize: 14, height: 55 }}
+                    itemStyle={{ fontSize: 14, height: 45 }}
                     onValueChange={(itemValue) => setSelectedSeason(itemValue)}
                   >
                     <Picker.Item label="Yala" value="Yala" />
@@ -328,7 +345,7 @@ const FarmerTrackerScreen = () => {
               {seasonAnalyticsCrops.length > 0 ? (
                 seasonAnalyticsCrops.map(crop => (
                   <View key={crop._id} style={styles.analyticsRow}>
-                    <Text style={styles.analyticsCropName}>{crop.cropName} <Text style={{fontWeight:'normal', color: '#6B7280'}}>({crop.fieldSize} Acres)</Text></Text>
+                    <Text style={styles.analyticsCropName}>{crop.cropName} <Text style={{fontWeight:'normal', color: '#9CA3AF'}}>({crop.fieldSize} Acres)</Text></Text>
                     <View style={styles.analyticsValues}>
                        <Text style={styles.aYield}>{crop.yieldAmount} Kg</Text>
                        <Text style={styles.aIncome}>Rs {crop.incomeAmount}</Text>
@@ -336,15 +353,15 @@ const FarmerTrackerScreen = () => {
                   </View>
                 ))
               ) : (
-                <View style={styles.emptyAnalytics}>
+                <Animated.View entering={FadeInUp.duration(400)} style={styles.emptyAnalytics}>
                   <Text style={styles.emptyAnalyticsMsg}>No completed yield data for this season.</Text>
-                  <Text style={styles.emptyAnalyticsSubmsg}>Update your crop logs with harvest data to see them here.</Text>
-                </View>
+                  <Text style={styles.emptyAnalyticsSubmsg}>Update crop logs with harvest data to see them here.</Text>
+                </Animated.View>
               )}
-            </View>
+            </Animated.View>
 
             {/* Calendar Component */}
-            <View style={styles.calendarCard}>
+            <Animated.View entering={FadeInDown.delay(200).duration(600).springify()} style={styles.calendarCard}>
                <Text style={styles.sectionTitle}>Crop Calendar</Text>
                <Calendar
                  markedDates={getMarkedDates()}
@@ -352,34 +369,40 @@ const FarmerTrackerScreen = () => {
                  theme={{
                    todayTextColor: '#10B981',
                    arrowColor: '#111827',
+                   textMonthFontWeight: 'bold',
                    dotStyle: { width: 6, height: 6, borderRadius: 3, marginTop: 1 },
+                   calendarBackground: 'transparent'
                  }}
                />
-            </View>
+            </Animated.View>
 
-            <Text style={[styles.sectionTitle, { marginLeft: 16, marginTop: 16 }]}>Recent Crop Logs</Text>
+            <Animated.Text entering={FadeInDown.delay(300).duration(600).springify()} style={[styles.sectionTitle, { marginLeft: 16, marginTop: 24, marginBottom: 12 }]}>
+              Recent Crop Logs
+            </Animated.Text>
           </>
         )}
-        renderItem={({ item }) => (
-          <CropCard 
-            crop={item} 
-            onAddActivity={openActivityModal}
-            onUpdateYield={openYieldModal}
-            onEdit={openCropModal}
-            onDelete={handleDeleteCrop}
-            onToggleActivity={handleToggleActivityStatus}
-          />
+        renderItem={({ item, index }) => (
+          <Animated.View entering={FadeInUp.delay(350 + (index * 100)).duration(500).springify()}>
+            <CropCard 
+              crop={item} 
+              onAddActivity={openActivityModal}
+              onUpdateYield={openYieldModal}
+              onEdit={openCropModal}
+              onDelete={handleDeleteCrop}
+              onToggleActivity={handleToggleActivityStatus}
+            />
+          </Animated.View>
         )}
         ListEmptyComponent={() => (
-           <View style={styles.emptyList}>
-             <Ionicons name="leaf-outline" size={40} color="#D1D5DB" />
+           <Animated.View entering={FadeInUp.delay(400)} style={styles.emptyList}>
+             <Ionicons name="leaf-outline" size={48} color="#D1D5DB" />
              <Text style={styles.emptyListText}>No crops logged yet. Start tracking your farm!</Text>
-           </View>
+           </Animated.View>
         )}
-        contentContainerStyle={{ paddingBottom: 80 }}
+        contentContainerStyle={{ paddingBottom: 100 }}
       />
 
-      {/* CROP MODAL */}
+      {/* MODALS RETAINED FOR FUNCTIONALITY */}
       <Modal isVisible={cropModalVisible} onBackdropPress={() => setCropModalVisible(false)} style={styles.bottomModal}>
         <View style={styles.sheetContent}>
           <View style={styles.sheetHeader}>
@@ -434,7 +457,6 @@ const FarmerTrackerScreen = () => {
         </View>
       </Modal>
 
-      {/* ACTIVITY MODAL */}
       <Modal isVisible={activityModalVisible} onBackdropPress={() => setActivityModalVisible(false)} style={styles.bottomModal}>
         <View style={styles.sheetContent}>
           <View style={styles.sheetHeader}>
@@ -468,7 +490,6 @@ const FarmerTrackerScreen = () => {
         </View>
       </Modal>
 
-      {/* YIELD MODAL */}
       <Modal isVisible={yieldModalVisible} onBackdropPress={() => setYieldModalVisible(false)} style={styles.bottomModal}>
         <View style={styles.sheetContent}>
           <View style={styles.sheetHeader}>
@@ -485,7 +506,6 @@ const FarmerTrackerScreen = () => {
         </View>
       </Modal>
 
-      {/* DAY EVENTS MODAL */}
       <Modal isVisible={dayEventsModalVisible} onBackdropPress={() => setDayEventsModalVisible(false)} style={styles.bottomModal}>
         <View style={styles.sheetContent}>
           <View style={styles.sheetHeader}>
@@ -499,8 +519,8 @@ const FarmerTrackerScreen = () => {
                   <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
                     <Text style={[styles.eventTitle, { textDecorationLine: evt.isCompleted ? 'line-through' : 'none' }]}>{evt.title}</Text>
                     {evt.type === 'Activity' && (
-                       <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, backgroundColor: evt.isCompleted ? '#10B98120' : '#f59e0b20' }}>
-                         <Text style={{ fontSize: 12, fontWeight: '600', color: evt.isCompleted ? '#10B981' : '#f59e0b' }}>
+                       <View style={{ paddingHorizontal: 8, paddingVertical: 2, borderRadius: 12, backgroundColor: evt.isCompleted ? '#10B98120' : '#F59E0B20' }}>
+                         <Text style={{ fontSize: 12, fontWeight: '700', color: evt.isCompleted ? '#10B981' : '#F59E0B' }}>
                            {evt.isCompleted ? 'Completed' : 'Pending'}
                          </Text>
                        </View>
@@ -552,31 +572,38 @@ const styles = StyleSheet.create({
     flexDirection: 'row', 
     justifyContent: 'space-between', 
     alignItems: 'center', 
-    padding: 16,
-    paddingTop: 24
+    padding: 20,
+    paddingTop: 30,
+    paddingBottom: 15,
   },
-  headerTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827', flex: 1 },
+  headerTitle: { fontSize: 24, fontWeight: '800', color: '#111827', flex: 1, letterSpacing: -0.5 },
   addButton: { 
     backgroundColor: '#10B981', 
     flexDirection: 'row', 
     alignItems: 'center', 
-    paddingVertical: 8, 
+    paddingVertical: 10, 
     paddingHorizontal: 16, 
-    borderRadius: 8 
+    borderRadius: 12,
+    shadowColor: '#10B981',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4
   },
-  addButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
-  sectionTitle: { fontSize: 18, fontWeight: '700', color: '#111827', marginBottom: 12 },
+  addButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14, letterSpacing: 0.5 },
+  sectionTitle: { fontSize: 18, fontWeight: '800', color: '#111827', marginBottom: 16, letterSpacing: -0.5 },
+  
   analyticsCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 24,
+    padding: 20,
     marginHorizontal: 16,
     marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
   analyticsHeader: {
     flexDirection: 'row',
@@ -584,73 +611,75 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 16,
   },
-  analyticsTitle: { fontSize: 16, fontWeight: 'bold', color: '#111827' },
-  analyticsSub: { fontSize: 12, color: '#6B7280', marginTop: 4 },
+  analyticsTitle: { fontSize: 17, fontWeight: '800', color: '#111827' },
+  analyticsSub: { fontSize: 13, color: '#6B7280', marginTop: 4 },
   pickerContainerSmall: {
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 8,
-    width: 160,
+    borderRadius: 12,
+    width: 140,
     justifyContent: 'center',
     backgroundColor: '#F9FAFB',
-    height: 55,
+    height: 45,
   },
   pickerSmall: { 
-    height: 55,
+    height: 45,
     fontSize: 14,
+    color: '#374151'
   },
   analyticsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: 14,
     borderTopWidth: 1,
     borderTopColor: '#F3F4F6',
   },
-  analyticsCropName: { fontSize: 14, fontWeight: '600', color: '#111827' },
+  analyticsCropName: { fontSize: 15, fontWeight: '700', color: '#111827' },
   analyticsValues: { alignItems: 'flex-end' },
-  aYield: { fontSize: 13, fontWeight: '500', color: '#10B981', marginBottom: 2 },
-  aIncome: { fontSize: 13, fontWeight: 'bold', color: '#EAB308' },
-  emptyAnalytics: {
-    alignItems: 'center',
-    paddingVertical: 20,
-  },
-  emptyAnalyticsMsg: { fontSize: 14, color: '#6B7280', fontWeight: '500' },
+  aYield: { fontSize: 14, fontWeight: '600', color: '#10B981', marginBottom: 2 },
+  aIncome: { fontSize: 14, fontWeight: '800', color: '#F59E0B' },
+  emptyAnalytics: { alignItems: 'center', paddingVertical: 20 },
+  emptyAnalyticsMsg: { fontSize: 14, color: '#6B7280', fontWeight: '600' },
   emptyAnalyticsSubmsg: { fontSize: 12, color: '#9CA3AF', marginTop: 4 },
+  
   calendarCard: {
     backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: 24,
+    padding: 20,
     marginHorizontal: 16,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 4,
   },
-  emptyList: { alignItems: 'center', justifyContent: 'center', padding: 40, marginTop: 20, backgroundColor: '#fff', borderRadius: 16, marginHorizontal: 16 },
-  emptyListText: { color: '#6B7280', marginTop: 12 },
+  
+  emptyList: { alignItems: 'center', justifyContent: 'center', padding: 40, marginTop: 20, backgroundColor: '#fff', borderRadius: 24, marginHorizontal: 16, shadowOpacity: 0.05, shadowRadius: 10 },
+  emptyListText: { color: '#6B7280', marginTop: 12, fontWeight: '500' },
+  
   bottomModal: { justifyContent: 'flex-end', margin: 0 },
-  sheetContent: { backgroundColor: '#fff', padding: 24, borderTopLeftRadius: 20, borderTopRightRadius: 20, maxHeight: '90%' },
-  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  sheetTitle: { fontSize: 20, fontWeight: 'bold', color: '#111827' },
-  inputLabel: { fontSize: 13, fontWeight: '600', color: '#4B5563', marginBottom: 6, marginTop: 12 },
-  input: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 12, fontSize: 15, backgroundColor: '#F9FAFB' },
-  pickerContainer: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, backgroundColor: '#F9FAFB' },
-  datePickerBtn: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 8, padding: 14, backgroundColor: '#F9FAFB' },
-  submitBtn: { backgroundColor: '#10B981', padding: 16, borderRadius: 8, alignItems: 'center', marginTop: 24, marginBottom: 20 },
-  submitBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+  sheetContent: { backgroundColor: '#fff', padding: 24, borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%' },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 },
+  sheetTitle: { fontSize: 20, fontWeight: '800', color: '#111827' },
+  inputLabel: { fontSize: 13, fontWeight: '700', color: '#4B5563', marginBottom: 8, marginTop: 16, textTransform: 'uppercase', letterSpacing: 0.5 },
+  input: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 12, padding: 14, fontSize: 16, backgroundColor: '#F9FAFB' },
+  pickerContainer: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 12, backgroundColor: '#F9FAFB' },
+  datePickerBtn: { borderWidth: 1, borderColor: '#D1D5DB', borderRadius: 12, padding: 14, backgroundColor: '#F9FAFB' },
+  submitBtn: { backgroundColor: '#10B981', padding: 16, borderRadius: 12, alignItems: 'center', marginTop: 24, marginBottom: 20, shadowColor: '#10B981', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8 },
+  submitBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16, letterSpacing: 0.5 },
+  
   eventItem: {
     backgroundColor: '#F9FAFB',
     padding: 16,
-    borderRadius: 8,
-    marginBottom: 10,
+    borderRadius: 12,
+    marginBottom: 12,
     borderLeftWidth: 4,
     borderWidth: 1,
     borderColor: '#E5E7EB',
   },
-  eventTitle: { fontSize: 16, fontWeight: 'bold', color: '#111827' },
-  eventDesc: { fontSize: 14, color: '#6B7280', marginTop: 4 }
+  eventTitle: { fontSize: 16, fontWeight: '700', color: '#111827' },
+  eventDesc: { fontSize: 14, color: '#6B7280', marginTop: 6, fontWeight: '500' }
 });
 
 export default FarmerTrackerScreen;
