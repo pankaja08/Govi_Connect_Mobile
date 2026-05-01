@@ -4,14 +4,14 @@ const authMiddleware = require('../middleware/auth');
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(authMiddleware.protect);
-
-// Public routes (accessible to all authenticated users)
+// Public routes (accessible to all users, including guests)
 router.get('/locations', cropAdvisoryController.getAllLocations);
 router.get('/seasons', cropAdvisoryController.getAllSeasons);
 router.get('/soil-types', cropAdvisoryController.getAllSoilTypes);
 router.get('/recommendations', cropAdvisoryController.getRecommendations);
+
+// All other routes require authentication
+router.use(authMiddleware.protect);
 
 // Admin/Expert only routes
 router.use(authMiddleware.restrictTo('Expert', 'Admin'));

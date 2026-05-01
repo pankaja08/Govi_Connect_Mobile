@@ -9,14 +9,11 @@ import {
   FlatList,
   Alert,
   ActivityIndicator,
-  Dimensions
+  Modal
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { getLocations, getSeasons, getSoilTypes, getRecommendations } from '../api/cropAdvisoryApi';
-
-const { width } = Dimensions.get('window');
 
 const CropAdvisoryScreen = () => {
   const [locations, setLocations] = useState([]);
@@ -29,6 +26,53 @@ const CropAdvisoryScreen = () => {
   const [loading, setLoading] = useState(false);
   const [loadingData, setLoadingData] = useState(true);
   const [showResults, setShowResults] = useState(false);
+  const [activeSelector, setActiveSelector] = useState(null);
+
+  const benefits = [
+    {
+      icon: '🌾',
+      title: 'Location-Based',
+      description: 'Tailored to your farming zone and climate.'
+    },
+    {
+      icon: '📅',
+      title: 'Seasonal Guidance',
+      description: 'Optimal crops for Yala and Maha seasons.'
+    },
+    {
+      icon: '🌱',
+      title: 'Soil Matching',
+      description: 'Best crop suggestions for your soil type.'
+    },
+    {
+      icon: '🧪',
+      title: 'Fertilizer Tips',
+      description: 'Recommended fertilizers for each crop.'
+    },
+    {
+      icon: '🛡️',
+      title: 'Disease Awareness',
+      description: 'Common diseases to watch for and prevent.'
+    }
+  ];
+
+  const steps = [
+    {
+      number: '1',
+      title: 'Choose Your Location',
+      description: 'Pick your zone to match crops with rainfall and climate patterns.'
+    },
+    {
+      number: '2',
+      title: 'Select Season & Soil Type',
+      description: 'Choose Maha or Yala and add soil type for more targeted results.'
+    },
+    {
+      number: '3',
+      title: 'Get Detailed Results',
+      description: 'View suitable crops with care instructions, fertilizer tips, and disease warnings.'
+    }
+  ];
 
   useEffect(() => {
     loadInitialData();
@@ -82,33 +126,49 @@ const CropAdvisoryScreen = () => {
     setSelectedSoil('Any');
   };
 
-  const benefits = [
-    {
-      icon: '🌾',
-      title: 'Location-Based',
-      description: 'Recommendations tailored to your farming zone and climate.'
+  const handleBackToForm = () => {
+    setShowResults(false);
+  };
+
+  const openSelector = (selectorName) => {
+    setActiveSelector(selectorName);
+  };
+
+  const closeSelector = () => {
+    setActiveSelector(null);
+  };
+
+  const selectorConfig = {
+    location: {
+      title: 'Select Location',
+      value: selectedLocation,
+      options: locations.map((location) => ({ label: location.name, value: location.name })),
+      onSelect: setSelectedLocation,
     },
-    {
-      icon: '📅',
-      title: 'Seasonal Guidance',
-      description: 'Optimal crops for Yala and Maha seasons.'
+    season: {
+      title: 'Select Season',
+      value: selectedSeason,
+      options: seasons.map((season) => ({ label: season.name, value: season.name })),
+      onSelect: setSelectedSeason,
     },
-    {
-      icon: '🌱',
-      title: 'Soil Matching',
-      description: 'Crops suited to your soil type for best results.'
+    soil: {
+      title: 'Select Soil Type',
+      value: selectedSoil,
+      options: [
+        { label: 'Any Soil Type', value: 'Any' },
+        ...soilTypes.map((soil) => ({ label: soil.name, value: soil.name })),
+      ],
+      onSelect: setSelectedSoil,
     },
-    {
-      icon: '🧪',
-      title: 'Fertilizer Tips',
-      description: 'Recommended fertilizers for each crop.'
-    },
-    {
-      icon: '🛡️',
-      title: 'Disease Awareness',
-      description: 'Common diseases to watch for and prevent.'
-    }
-  ];
+  };
+
+  const currentSelector = activeSelector ? selectorConfig[activeSelector] : null;
+
+  const handleSelectOption = (value) => {
+    if (!currentSelector) return;
+    currentSelector.onSelect(value);
+    closeSelector();
+  };
 
   const renderBenefitCard = ({ item }) => (
     <View style={styles.benefitCard}>
@@ -118,18 +178,20 @@ const CropAdvisoryScreen = () => {
     </View>
   );
 
-  const renderCropCard = ({ item, index }) => (
-    <View style={styles.cropCard}>
-      {index === 0 && (
-        <LinearGradient
-          colors={['#FFD700', '#FFA500']}
-          style={styles.topRecommendedBadge}
-        >
-          <MaterialCommunityIcons name="star" size={16} color="#fff" />
-          <Text style={styles.badgeText}>Top Recommended</Text>
-        </LinearGradient>
-      )}
+  const renderStep = ({ item }) => (
+    <View style={styles.stepItem}>
+      <View style={styles.stepBadge}>
+        <Text style={styles.stepNumber}>{item.number}</Text>
+      </View>
+      <View style={styles.stepContent}>
+        <Text style={styles.stepTitle}>{item.title}</Text>
+        <Text style={styles.stepDescription}>{item.description}</Text>
+      </View>
+    </View>
+  );
 
+  const renderCropCard = ({ item }) => (
+    <View style={styles.cropCard}>
       <Image
         source={{ uri: item.imageUrl || 'https://via.placeholder.com/200' }}
         style={styles.cropImage}
@@ -140,13 +202,13 @@ const CropAdvisoryScreen = () => {
         <Text style={styles.cropName}>{item.cropName}</Text>
 
         <View style={styles.careSection}>
-          <Text style={styles.sectionLabel}>Care Instructions</Text>
+          <Text style={styles.cardSectionLabel}>Care Instructions</Text>
           <Text style={styles.careText}>{item.careInstructions}</Text>
         </View>
 
         {item.fertilizers && item.fertilizers.length > 0 && (
           <View style={styles.tagsSection}>
-            <Text style={styles.sectionLabel}>📦 Fertilizers</Text>
+            <Text style={styles.cardSectionLabel}>📦 Fertilizers</Text>
             <View style={styles.tagContainer}>
               {item.fertilizers.map((fert, idx) => (
                 <View key={idx} style={styles.tag}>
@@ -159,7 +221,7 @@ const CropAdvisoryScreen = () => {
 
         {item.diseases && item.diseases.length > 0 && (
           <View style={styles.tagsSection}>
-            <Text style={styles.sectionLabel}>⚠️ Common Diseases</Text>
+            <Text style={styles.cardSectionLabel}>⚠️ Common Diseases</Text>
             <View style={styles.tagContainer}>
               {item.diseases.map((disease, idx) => (
                 <View key={idx} style={[styles.tag, styles.diseaseTag]}>
@@ -176,7 +238,7 @@ const CropAdvisoryScreen = () => {
   if (loadingData) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4CAF50" />
+        <ActivityIndicator size="large" color="#149b60" />
         <Text style={styles.loadingText}>Loading crop data...</Text>
       </View>
     );
@@ -186,10 +248,16 @@ const CropAdvisoryScreen = () => {
     return (
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
         <LinearGradient
-          colors={['#4CAF50', '#45a049']}
+          colors={['#0d7b47', '#0b6f42']}
           style={styles.resultsHeader}
         >
           <View style={styles.resultsHeaderContent}>
+            <View style={styles.resultsBackRow}>
+              <TouchableOpacity style={styles.backButton} onPress={handleBackToForm}>
+                <MaterialCommunityIcons name="arrow-left" size={18} color="#ffffff" />
+                <Text style={styles.backButtonText}>Back to Form</Text>
+              </TouchableOpacity>
+            </View>
             <Text style={styles.resultsTitle}>Crop Recommendations</Text>
             <Text style={styles.resultsCriteria}>
               {selectedLocation} • {selectedSeason}
@@ -224,7 +292,7 @@ const CropAdvisoryScreen = () => {
           onPress={handleNewSearch}
         >
           <MaterialCommunityIcons name="magnify" size={20} color="#fff" />
-          <Text style={styles.newSearchText}>New Search</Text>
+          <Text style={styles.newSearchText}>Reset and Search Again</Text>
         </TouchableOpacity>
 
         <View style={{ height: 30 }} />
@@ -234,100 +302,71 @@ const CropAdvisoryScreen = () => {
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Hero Section */}
       <LinearGradient
-        colors={['#4CAF50', '#45a049']}
+        colors={['#0d7b47', '#0b6f42']}
         style={styles.heroSection}
       >
-        <Text style={styles.heroTitle}>Revolutionizing Agriculture</Text>
+        <View style={styles.factsBadge}>
+          <Text style={styles.factsBadgeText}>Powered by Facts</Text>
+        </View>
+        <Text style={styles.heroTitle}>Smart Crop</Text>
+        <Text style={styles.heroTitle}>Recommendations</Text>
         <Text style={styles.heroSubtitle}>
-          Get personalized crop recommendations based on your location, season, and soil type
+          Data-driven crop advice for your location, season, and soil conditions.
         </Text>
       </LinearGradient>
 
-      {/* Benefits Section */}
       <View style={styles.benefitsSection}>
-        <Text style={styles.sectionLabel}>Why Choose Smart Crop Advisory</Text>
-        <Text style={styles.sectionTitle}>Our Benefits</Text>
+        <Text style={styles.sectionEyebrow}>Our Benefits</Text>
+        <Text style={styles.sectionTitle}>Benefits of Smart Crop Advisory</Text>
+        <Text style={styles.sectionSubtitle}>
+          Grow more confidently with practical recommendations for local farming.
+        </Text>
         <FlatList
           data={benefits}
           renderItem={renderBenefitCard}
           keyExtractor={(item, idx) => idx.toString()}
           scrollEnabled={false}
-          numColumns={2}
-          columnWrapperStyle={styles.benefitsRow}
+          numColumns={1}
           contentContainerStyle={styles.benefitsList}
         />
       </View>
 
-      {/* Form Section */}
       <View style={styles.formSection}>
-        <Text style={styles.formTitle}>Get Your Recommendations</Text>
+        <Text style={styles.formTitle}>Get Crop Recommendations</Text>
         <Text style={styles.formDescription}>
-          Select your location, season, and soil type to receive personalized recommendations.
+          Select your location, season, and soil type to receive personalized crop guidance.
         </Text>
 
         <View style={styles.formGroup}>
           <Text style={styles.label}>Location *</Text>
-          <View style={styles.pickerWrapper}>
+          <TouchableOpacity style={styles.pickerWrapper} onPress={() => openSelector('location')} activeOpacity={0.8}>
             <MaterialCommunityIcons name="map-marker" size={20} color="#4CAF50" style={styles.pickerIcon} />
-            <Picker
-              selectedValue={selectedLocation}
-              onValueChange={setSelectedLocation}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select Location" value="" />
-              {locations.map(location => (
-                <Picker.Item
-                  key={location._id}
-                  label={location.name}
-                  value={location.name}
-                />
-              ))}
-            </Picker>
-          </View>
+            <Text style={[styles.selectorText, !selectedLocation && styles.selectorPlaceholder]}>
+              {selectedLocation || '-- Select Location --'}
+            </Text>
+            <MaterialCommunityIcons name="chevron-down" size={20} color="#6c7a89" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.formGroup}>
           <Text style={styles.label}>Season *</Text>
-          <View style={styles.pickerWrapper}>
+          <TouchableOpacity style={styles.pickerWrapper} onPress={() => openSelector('season')} activeOpacity={0.8}>
             <MaterialCommunityIcons name="calendar" size={20} color="#4CAF50" style={styles.pickerIcon} />
-            <Picker
-              selectedValue={selectedSeason}
-              onValueChange={setSelectedSeason}
-              style={styles.picker}
-            >
-              <Picker.Item label="Select Season" value="" />
-              {seasons.map(season => (
-                <Picker.Item
-                  key={season._id}
-                  label={season.name}
-                  value={season.name}
-                />
-              ))}
-            </Picker>
-          </View>
+            <Text style={[styles.selectorText, !selectedSeason && styles.selectorPlaceholder]}>
+              {selectedSeason || '-- Select Season --'}
+            </Text>
+            <MaterialCommunityIcons name="chevron-down" size={20} color="#6c7a89" />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.formGroup}>
-          <Text style={styles.label}>Soil Type (Optional)</Text>
-          <View style={styles.pickerWrapper}>
+          <Text style={styles.label}>Soil Type</Text>
+          <TouchableOpacity style={styles.pickerWrapper} onPress={() => openSelector('soil')} activeOpacity={0.8}>
             <MaterialCommunityIcons name="grain" size={20} color="#4CAF50" style={styles.pickerIcon} />
-            <Picker
-              selectedValue={selectedSoil}
-              onValueChange={setSelectedSoil}
-              style={styles.picker}
-            >
-              <Picker.Item label="Any" value="Any" />
-              {soilTypes.map(soil => (
-                <Picker.Item
-                  key={soil._id}
-                  label={soil.name}
-                  value={soil.name}
-                />
-              ))}
-            </Picker>
-          </View>
+            <Text style={styles.selectorText}>{selectedSoil || 'Any Soil Type'}</Text>
+            <MaterialCommunityIcons name="chevron-down" size={20} color="#6c7a89" />
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity
@@ -339,14 +378,78 @@ const CropAdvisoryScreen = () => {
             <ActivityIndicator color="#fff" />
           ) : (
             <>
-              <MaterialCommunityIcons name="magnify" size={20} color="#fff" />
-              <Text style={styles.submitButtonText}>Get Recommendations</Text>
+              <MaterialCommunityIcons name="check-circle-outline" size={20} color="#fff" />
+              <Text style={styles.submitButtonText}>Get My Recommendations</Text>
             </>
           )}
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.resetButton} onPress={handleNewSearch}>
+          <Text style={styles.resetButtonText}>Reset Form</Text>
+        </TouchableOpacity>
+
+      </View>
+
+      <View style={styles.processSection}>
+        <Text style={styles.sectionEyebrow}>Simple Process</Text>
+        <Text style={styles.processTitle}>How It Works</Text>
+        <Text style={styles.processSubtitle}>Three steps to smarter farming decisions.</Text>
+
+        <FlatList
+          data={steps}
+          renderItem={renderStep}
+          keyExtractor={(item) => item.number}
+          scrollEnabled={false}
+          ItemSeparatorComponent={() => <View style={{ height: 14 }} />}
+        />
+
+        <View style={styles.proTipContainer}>
+          <Text style={styles.proTipTitle}>Pro Tip</Text>
+          <Text style={styles.proTipText}>
+            Start with "Any Soil Type" to explore all matching crops, then narrow down with a specific soil type.
+          </Text>
+        </View>
       </View>
 
       <View style={{ height: 30 }} />
+
+      <Modal
+        visible={!!activeSelector}
+        transparent
+        animationType="slide"
+        onRequestClose={closeSelector}
+      >
+        <TouchableOpacity style={styles.modalOverlay} activeOpacity={1} onPress={closeSelector}>
+          <TouchableOpacity activeOpacity={1} style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>{currentSelector?.title || 'Select Option'}</Text>
+              <TouchableOpacity onPress={closeSelector}>
+                <MaterialCommunityIcons name="close" size={22} color="#2f3b4a" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalOptionsWrap} showsVerticalScrollIndicator={false}>
+              {currentSelector?.options?.map((option) => {
+                const isSelected = currentSelector.value === option.value;
+                return (
+                  <TouchableOpacity
+                    key={option.value}
+                    style={[styles.modalOptionItem, isSelected && styles.modalOptionItemSelected]}
+                    onPress={() => handleSelectOption(option.value)}
+                  >
+                    <Text style={[styles.modalOptionText, isSelected && styles.modalOptionTextSelected]}>
+                      {option.label}
+                    </Text>
+                    {isSelected && (
+                      <MaterialCommunityIcons name="check-circle" size={18} color="#0f9258" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
     </ScrollView>
   );
 };
@@ -354,107 +457,129 @@ const CropAdvisoryScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f2f8f3',
   },
   centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f2f8f3',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#666',
+    color: '#566273',
   },
-
-  // Hero Section
   heroSection: {
     paddingHorizontal: 20,
-    paddingVertical: 40,
+    paddingTop: 28,
+    paddingBottom: 42,
     alignItems: 'center',
+    borderBottomLeftRadius: 28,
+    borderBottomRightRadius: 28,
+  },
+  factsBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.24)',
+    borderRadius: 14,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginBottom: 14,
+  },
+  factsBadgeText: {
+    color: '#d4f4e3',
+    fontSize: 11,
+    fontWeight: '700',
+    letterSpacing: 0.3,
   },
   heroTitle: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 36,
+    fontWeight: '800',
     color: '#fff',
     textAlign: 'center',
-    marginBottom: 12,
+    lineHeight: 40,
   },
   heroSubtitle: {
-    fontSize: 15,
+    fontSize: 14,
     color: '#fff',
     textAlign: 'center',
-    opacity: 0.9,
-    lineHeight: 22,
+    opacity: 0.92,
+    lineHeight: 20,
+    marginTop: 14,
+    paddingHorizontal: 8,
   },
-
-  // Benefits Section
   benefitsSection: {
     paddingHorizontal: 16,
-    paddingVertical: 32,
+    paddingVertical: 24,
     backgroundColor: '#fff',
-    marginVertical: 16,
+    marginTop: 14,
+    marginHorizontal: 12,
+    borderRadius: 18,
   },
-  sectionLabel: {
-    fontSize: 13,
-    color: '#4CAF50',
+  sectionEyebrow: {
+    fontSize: 12,
+    color: '#c08243',
     fontWeight: '600',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
     textAlign: 'center',
   },
   sectionTitle: {
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: '700',
-    color: '#333',
+    color: '#1d2230',
     textAlign: 'center',
     marginTop: 8,
-    marginBottom: 20,
+    lineHeight: 35,
+  },
+  sectionSubtitle: {
+    fontSize: 14,
+    color: '#60697a',
+    textAlign: 'center',
+    marginTop: 10,
+    marginBottom: 18,
+    lineHeight: 20,
   },
   benefitsList: {
-    paddingHorizontal: 4,
-  },
-  benefitsRow: {
-    justifyContent: 'space-between',
-    marginBottom: 16,
+    paddingHorizontal: 2,
   },
   benefitCard: {
-    width: (width - 56) / 2,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    padding: 16,
+    width: '100%',
+    backgroundColor: '#f7f9fb',
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 14,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#e0e0e0',
+    borderColor: '#eef1f3',
+    marginBottom: 10,
   },
   benefitIcon: {
-    fontSize: 32,
-    marginBottom: 12,
+    fontSize: 30,
+    marginBottom: 10,
   },
   benefitTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1d2230',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 6,
   },
   benefitDescription: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 13,
+    color: '#6a7383',
     textAlign: 'center',
-    lineHeight: 16,
+    lineHeight: 18,
   },
-
-  // Form Section
   formSection: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingHorizontal: 20,
-    paddingVertical: 28,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 20,
     marginHorizontal: 12,
-    marginBottom: 12,
+    marginTop: 14,
+    marginBottom: 14,
     elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -464,49 +589,57 @@ const styles = StyleSheet.create({
   formTitle: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 8,
+    color: '#1d2230',
+    marginBottom: 6,
   },
   formDescription: {
     fontSize: 14,
-    color: '#666',
-    marginBottom: 24,
-    lineHeight: 20,
+    color: '#657082',
+    marginBottom: 18,
+    lineHeight: 19,
   },
   formGroup: {
-    marginBottom: 20,
+    marginBottom: 14,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#333',
-    marginBottom: 10,
+    color: '#313745',
+    marginBottom: 8,
   },
   pickerWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: '#e0e0e0',
+    borderWidth: 1,
+    borderColor: '#d5dde4',
     borderRadius: 10,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#ffffff',
     overflow: 'hidden',
+    minHeight: 42,
+    paddingHorizontal: 10,
   },
   pickerIcon: {
-    marginLeft: 12,
+    marginRight: 8,
   },
-  picker: {
+  selectorText: {
     flex: 1,
-    height: 50,
-    color: '#333',
+    paddingVertical: 10,
+    color: '#2d3748',
+    fontSize: 13,
+    fontWeight: '500',
+  },
+  selectorPlaceholder: {
+    color: '#8b97a4',
+    fontWeight: '400',
   },
   submitButton: {
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#0f9258',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 14,
-    borderRadius: 10,
-    marginTop: 8,
+    borderRadius: 11,
+    marginTop: 4,
     elevation: 2,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
@@ -518,90 +651,183 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     marginLeft: 8,
   },
-
-  // Results
-  resultsHeader: {
-    paddingHorizontal: 20,
-    paddingVertical: 28,
-    paddingTop: 32,
-  },
-  resultsHeaderContent: {
+  resetButton: {
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#d7dbe1',
+    borderRadius: 11,
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 13,
+    backgroundColor: '#f7f8fa',
   },
-  resultsTitle: {
+  resetButtonText: {
+    color: '#6a7282',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  processSection: {
+    backgroundColor: '#ecf8f1',
+    marginHorizontal: 12,
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 18,
+  },
+  processTitle: {
     fontSize: 28,
     fontWeight: '700',
+    color: '#1d2230',
+    marginTop: 6,
+  },
+  processSubtitle: {
+    marginTop: 6,
+    marginBottom: 16,
+    fontSize: 14,
+    color: '#5f6777',
+  },
+  stepItem: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  stepBadge: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#13965b',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+    marginTop: 1,
+  },
+  stepNumber: {
     color: '#fff',
-    marginBottom: 8,
+    fontWeight: '700',
+  },
+  stepContent: {
+    flex: 1,
+  },
+  stepTitle: {
+    fontSize: 16,
+    color: '#18202f',
+    fontWeight: '700',
+    marginBottom: 4,
+  },
+  stepDescription: {
+    fontSize: 13,
+    color: '#4f5868',
+    lineHeight: 18,
+  },
+  proTipContainer: {
+    marginTop: 16,
+    backgroundColor: '#dff4e7',
+    borderRadius: 12,
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#c3e8d0',
+  },
+  proTipTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#147244',
+    marginBottom: 4,
+  },
+  proTipText: {
+    fontSize: 13,
+    color: '#2c6247',
+    lineHeight: 18,
+  },
+  resultsHeader: {
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    paddingTop: 16,
+  },
+  resultsHeaderContent: {
+    alignItems: 'stretch',
+    backgroundColor: 'rgba(255, 255, 255, 0.10)',
+    borderRadius: 14,
+    padding: 12,
+  },
+  resultsBackRow: {
+    marginBottom: 10,
+  },
+  backButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  backButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  resultsTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#fff',
+    marginBottom: 6,
   },
   resultsCriteria: {
-    fontSize: 14,
-    color: '#fff',
-    opacity: 0.9,
-    marginBottom: 12,
-    fontWeight: '500',
-  },
-  resultsCount: {
     fontSize: 13,
     color: '#fff',
-    opacity: 0.8,
+    opacity: 0.9,
+    marginBottom: 8,
+    fontWeight: '400',
+  },
+  resultsCount: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.85,
+    fontWeight: '500',
   },
   resultsContainer: {
-    paddingHorizontal: 12,
-    paddingVertical: 16,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
   },
   cropList: {
     paddingHorizontal: 4,
   },
   cropCard: {
     backgroundColor: '#fff',
-    borderRadius: 12,
-    marginBottom: 16,
-    elevation: 2,
-    shadowColor: '#000',
+    borderRadius: 14,
+    marginBottom: 14,
+    elevation: 1,
+    shadowColor: '#111',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 2,
     overflow: 'hidden',
-  },
-  topRecommendedBadge: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: 20,
-    zIndex: 10,
-  },
-  badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-    marginLeft: 4,
+    borderWidth: 1,
+    borderColor: '#eaf0ec',
   },
   cropImage: {
     width: '100%',
-    height: 180,
+    height: 150,
   },
   cropContent: {
-    padding: 16,
+    padding: 14,
   },
   cropName: {
-    fontSize: 18,
+    fontSize: 19,
     fontWeight: '700',
-    color: '#333',
-    marginBottom: 12,
+    color: '#253040',
+    marginBottom: 10,
   },
   careSection: {
-    marginBottom: 16,
+    marginBottom: 12,
+    backgroundColor: '#f7faf8',
+    borderRadius: 10,
+    padding: 10,
   },
-  sectionLabel: {
+  cardSectionLabel: {
     fontSize: 13,
     fontWeight: '600',
     color: '#4CAF50',
@@ -610,12 +836,12 @@ const styles = StyleSheet.create({
     letterSpacing: 0.3,
   },
   careText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#555',
-    lineHeight: 20,
+    lineHeight: 19,
   },
   tagsSection: {
-    marginBottom: 14,
+    marginBottom: 10,
   },
   tagContainer: {
     flexDirection: 'row',
@@ -640,8 +866,6 @@ const styles = StyleSheet.create({
     color: '#333',
     fontWeight: '500',
   },
-
-  // No Results
   noResultsContainer: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -662,10 +886,8 @@ const styles = StyleSheet.create({
     color: '#666',
     marginTop: 8,
   },
-
-  // New Search Button
   newSearchButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#117a4c',
     flexDirection: 'row',
     padding: 14,
     borderRadius: 10,
@@ -681,9 +903,58 @@ const styles = StyleSheet.create({
   },
   newSearchText: {
     color: '#fff',
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
     marginLeft: 8,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 18,
+    borderTopRightRadius: 18,
+    paddingHorizontal: 14,
+    paddingTop: 12,
+    paddingBottom: 22,
+    maxHeight: '62%',
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1f2b3a',
+  },
+  modalOptionsWrap: {
+    marginTop: 4,
+  },
+  modalOptionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    borderRadius: 10,
+    marginBottom: 6,
+  },
+  modalOptionItemSelected: {
+    backgroundColor: '#eefaf3',
+  },
+  modalOptionText: {
+    fontSize: 14,
+    color: '#2f3b4a',
+    fontWeight: '500',
+  },
+  modalOptionTextSelected: {
+    color: '#0f9258',
+    fontWeight: '700',
   },
 });
 
