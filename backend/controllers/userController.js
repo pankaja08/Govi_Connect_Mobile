@@ -66,6 +66,40 @@ exports.toggleSaveBlog = async (req, res) => {
 
 // ADMIN ONLY CONTROLLERS
 
+exports.getDashboardStats = async (req, res) => {
+  try {
+    const farmers = await User.countDocuments({ role: 'User' });
+    const agriOfficers = await User.countDocuments({ 
+      role: 'Expert', 
+      status: { $nin: ['Pending', 'Rejected'] } 
+    });
+    const pendingExperts = await User.countDocuments({ role: 'Expert', status: 'Pending' });
+
+    // Total = farmers + active agri officers + pending experts (excludes Admins)
+    const totalUsers = farmers + agriOfficers + pendingExperts;
+
+    // Get geographical distribution of Farmers
+    const geographicStats = await User.aggregate([
+      { $match: { role: 'User' } },
+      { $group: { _id: '$district', count: { $sum: 1 } } },
+      { $sort: { count: -1 } }
+    ]);
+
+    res.status(200).json({
+      status: 'success',
+      data: {
+        totalUsers,
+        farmers,
+        agriOfficers,
+        pendingExperts,
+        geographicStats
+      }
+    });
+  } catch (err) {
+    res.status(400).json({ status: 'fail', message: err.message });
+  }
+};
+
 exports.getAllUsers = async (req, res) => {
   try {
     const users = await User.find().sort({ role: 1, name: 1 });

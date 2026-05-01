@@ -29,7 +29,9 @@ const cropSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
-    required: [true, 'Crop must belong to a user']
+    // Note: main branch uses 'createdBy', but current branch uses 'user'. 
+    // Setting required to false to avoid breaking creation on merge.
+    required: false
   },
   cropName: {
     type: String,
@@ -42,19 +44,19 @@ const cropSchema = new mongoose.Schema({
       values: ['Yala', 'Maha', 'Inter-season'],
       message: '{VALUE} is not a valid season'
     },
-    required: [true, 'Season is required']
+    required: [false, 'Season is required'] // Made false to avoid breaking main controllers
   },
   plantedDate: {
     type: Date,
-    required: [true, 'Planted date is required']
+    required: [false, 'Planted date is required'] // Made false to avoid breaking main controllers
   },
   harvestExpectedDate: {
     type: Date,
-    required: [true, 'Expected harvest date is required']
+    required: [false, 'Expected harvest date is required'] // Made false to avoid breaking main controllers
   },
   fieldSize: {
     type: Number,
-    required: [true, 'Field size is required']
+    required: [false, 'Field size is required'] // Made false to avoid breaking main controllers
   },
   seedVariety: {
     type: String,
@@ -68,7 +70,44 @@ const cropSchema = new mongoose.Schema({
     type: Number,
     default: 0
   },
-  activities: [ActivitySchema]
+  activities: [ActivitySchema],
+  careInstructions: {
+    type: String,
+    required: [false, 'Care instructions are required'], // Made false to avoid breaking HEAD controllers
+    trim: true
+  },
+  imageUrl: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  locations: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Location',
+    required: false
+  }],
+  seasons: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Season',
+    required: false
+  }],
+  soilTypes: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'SoilType'
+  }],
+  fertilizers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Fertilizer'
+  }],
+  diseases: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Disease'
+  }],
+  createdBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: false // Made false to avoid breaking HEAD controllers
+  }
 }, { timestamps: true });
 
 module.exports = mongoose.model('Crop', cropSchema);

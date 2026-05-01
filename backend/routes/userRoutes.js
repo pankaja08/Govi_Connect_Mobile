@@ -14,6 +14,7 @@ router.put('/toggle-save-blog/:id', userController.toggleSaveBlog);
 
 // Admin only routes
 router.use(authMiddleware.restrictTo('Admin'));
+router.get('/admin/stats', userController.getDashboardStats);
 router.get('/admin/all', userController.getAllUsers);
 router.get('/admin/pending-experts', userController.getPendingExperts);
 router.patch('/admin/verify-expert/:id', userController.verifyExpert);
