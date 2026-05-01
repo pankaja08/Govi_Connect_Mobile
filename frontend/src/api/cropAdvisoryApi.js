@@ -35,12 +35,16 @@ export const getAllCrops = async () => {
 };
 
 export const createCrop = async (cropData) => {
-  const response = await apiClient.post('/crop-advisory/crops', cropData);
+  const response = await apiClient.post('/crop-advisory/crops', cropData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return response.data.data.crop;
 };
 
 export const updateCrop = async (id, cropData) => {
-  const response = await apiClient.patch(`/crop-advisory/crops/${id}`, cropData);
+  const response = await apiClient.patch(`/crop-advisory/crops/${id}`, cropData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
   return response.data.data.crop;
 };
 

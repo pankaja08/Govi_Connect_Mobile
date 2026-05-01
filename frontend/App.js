@@ -50,8 +50,9 @@ export default function App() {
       await AsyncStorage.setItem('userRole', 'Guest');
       setUserToken('GUEST_TOKEN');
       setUserRole('Guest');
-    }
-  }), []);
+    },
+    userRole // Added this to make it available in the context
+  }), [userRole]);
 
   if (isLoading) {
     return null; // Or a splash screen

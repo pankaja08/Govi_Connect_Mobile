@@ -4,6 +4,112 @@ const Season = require('../models/Season');
 const SoilType = require('../models/SoilType');
 const Fertilizer = require('../models/Fertilizer');
 const Disease = require('../models/Disease');
+const cloudinary = require('cloudinary').v2;
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+const cloudinaryFolder = process.env.CLOUDINARY_CROP_FOLDER || 'govi_crops';
+
+const parseArrayField = (value) => {
+  if (value === undefined || value === null || value === '') return [];
+  if (Array.isArray(value)) return value;
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parsed;
+    } catch (err) {
+      return trimmed
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  return [value];
+};
+
+const resolveReferenceIds = async (Model, rawValues, extraFields = {}) => {
+  const values = parseArrayField(rawValues);
+  if (!values.length) return [];
+
+  const ids = [];
+  for (const value of values) {
+    if (!value) continue;
+
+    const stringValue = String(value).trim();
+    if (!stringValue) continue;
+
+    let doc = null;
+    if (stringValue.match(/^[0-9a-fA-F]{24}$/)) {
+      doc = await Model.findById(stringValue);
+    }
+
+    if (!doc) {
+      doc = await Model.findOne({ name: stringValue });
+    }
+
+    if (!doc) {
+      doc = await Model.create({ name: stringValue, ...extraFields });
+    }
+
+    ids.push(doc._id);
+  }
+
+  return ids;
+};
+
+const buildCropPayload = async (req, isUpdate = false) => {
+  const payload = {};
+
+  if (!isUpdate || req.body.cropName !== undefined) {
+    payload.cropName = req.body.cropName;
+  }
+  if (!isUpdate || req.body.careInstructions !== undefined) {
+    payload.careInstructions = req.body.careInstructions;
+  }
+  if (!isUpdate || req.body.imageUrl !== undefined) {
+    payload.imageUrl = req.body.imageUrl || '';
+  }
+
+  const locations = await resolveReferenceIds(Location, req.body.locations);
+  const seasons = await resolveReferenceIds(Season, req.body.seasons);
+  const soilTypes = await resolveReferenceIds(SoilType, req.body.soilTypes);
+  const fertilizers = await resolveReferenceIds(Fertilizer, req.body.fertilizers, {
+    description: 'Added from crop profile',
+  });
+  const diseases = await resolveReferenceIds(Disease, req.body.diseases, {
+    symptoms: '',
+    treatment: '',
+  });
+
+  if (locations.length || !isUpdate) payload.locations = locations;
+  if (seasons.length || !isUpdate) payload.seasons = seasons;
+  if (soilTypes.length || req.body.soilTypes !== undefined || !isUpdate) payload.soilTypes = soilTypes;
+  if (fertilizers.length || req.body.fertilizers !== undefined || !isUpdate) payload.fertilizers = fertilizers;
+  if (diseases.length || req.body.diseases !== undefined || !isUpdate) payload.diseases = diseases;
+
+  if (req.file) {
+    const dataUri = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    const uploadResult = await cloudinary.uploader.upload(dataUri, {
+      folder: cloudinaryFolder,
+      resource_type: 'image',
+      use_filename: true,
+      unique_filename: true,
+      overwrite: false,
+    });
+    payload.imageUrl = uploadResult.secure_url;
+  }
+
+  return payload;
+};
 
 // Get all locations
 exports.getAllLocations = async (req, res) => {
@@ -157,8 +263,9 @@ exports.getRecommendations = async (req, res) => {
 // Create a new crop (Expert/Admin only)
 exports.createCrop = async (req, res) => {
   try {
+    const payload = await buildCropPayload(req, false);
     const newCrop = await Crop.create({
-      ...req.body,
+      ...payload,
       createdBy: req.user.id
     });
 
@@ -202,7 +309,8 @@ exports.getAllCrops = async (req, res) => {
 // Update crop (Expert/Admin only)
 exports.updateCrop = async (req, res) => {
   try {
-    const crop = await Crop.findByIdAndUpdate(req.params.id, req.body, {
+    const payload = await buildCropPayload(req, true);
+    const crop = await Crop.findByIdAndUpdate(req.params.id, payload, {
       new: true,
       runValidators: true
     });
@@ -229,7 +337,15 @@ exports.updateCrop = async (req, res) => {
 // Delete crop (Expert/Admin only)
 exports.deleteCrop = async (req, res) => {
   try {
-    const crop = await Crop.findByIdAndDelete(req.params.id);
+    const cropId = req.params.id || req.body.id || req.query.id;
+    if (!cropId) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Crop id is required',
+      });
+    }
+
+    const crop = await Crop.findByIdAndDelete(cropId);
 
     if (!crop) {
       return res.status(404).json({
@@ -238,9 +354,10 @@ exports.deleteCrop = async (req, res) => {
       });
     }
 
-    res.status(204).json({
+    res.status(200).json({
       status: 'success',
-      data: null
+      message: 'Crop deleted successfully',
+      data: null,
     });
   } catch (err) {
     res.status(400).json({

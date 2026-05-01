@@ -17,8 +17,10 @@ import ActivityScreen from '../screens/ActivityScreen';
 import GoviMartScreen from '../screens/GoviMartScreen';
 import ForumScreen from '../screens/ForumScreen';
 import CropAdvisoryScreen from '../screens/CropAdvisoryScreen';
+import ExpertCropProfileScreen from '../screens/ExpertCropProfileScreen';
 import ExpertDashboardScreen from '../screens/ExpertDashboardScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
+import AdminDashboardScreen from '../screens/AdminDashboardScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -26,7 +28,8 @@ const Tab = createBottomTabNavigator();
 
 // --- CUSTOM DRAWER CONTENT ---
 const CustomDrawerContent = (props) => {
-  const { signOut } = React.useContext(AuthContext);
+  const { signOut, userRole } = React.useContext(AuthContext);
+  const isGuest = userRole === 'Guest';
 
   const handleLogout = async () => {
     if (Platform.OS === 'web') {
@@ -51,6 +54,11 @@ const CustomDrawerContent = (props) => {
     }
   };
 
+  const handleLoginRedirect = async () => {
+    // For guest users, signing out clears the guest token and shows auth stack
+    await signOut();
+  };
+
   return (
     <DrawerContentScrollView {...props} contentContainerStyle={{flex: 1, backgroundColor: '#fff'}}>
       <View style={styles.drawerHeader}>
@@ -65,12 +73,19 @@ const CustomDrawerContent = (props) => {
         <DrawerItemList {...props} />
       </View>
 
-      {/* Logout Section at bottom */}
+      {/* Auth Section at bottom */}
       <View style={styles.authSection}>
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={22} color="#f44336" />
-          <Text style={styles.logoutText}>Logout</Text>
-        </TouchableOpacity>
+        {isGuest ? (
+          <TouchableOpacity style={styles.loginButton} onPress={handleLoginRedirect}>
+            <Ionicons name="log-in-outline" size={22} color="#2E7D32" />
+            <Text style={styles.loginText}>Login to System</Text>
+          </TouchableOpacity>
+        ) : (
+          <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={22} color="#f44336" />
+            <Text style={styles.logoutText}>Logout</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </DrawerContentScrollView>
   );
@@ -198,9 +213,9 @@ const ExpertDrawer = () => {
       />
       <Drawer.Screen 
         name="CropProfile" 
-        component={CropAdvisoryScreen} 
+        component={ExpertCropProfileScreen} 
         options={{ 
-          title: 'Crop Advisory',
+          title: 'Crop Profile',
           drawerIcon: ({color}) => <Ionicons name="leaf-outline" size={22} color={color} />,
           headerShown: false
         }} 
@@ -227,6 +242,74 @@ const ExpertDrawer = () => {
   );
 };
 
+// --- ADMIN DRAWER NAVIGATOR ---
+const AdminDrawer = () => {
+  return (
+    <Drawer.Navigator 
+      drawerContent={(props) => <CustomDrawerContent {...props} />}
+      screenOptions={{
+        headerStyle: { backgroundColor: '#115C39' },
+        headerTintColor: '#fff',
+        drawerActiveTintColor: '#115C39',
+        drawerLabelStyle: { fontWeight: 'bold' },
+        headerShown: false
+      }}
+    >
+      <Drawer.Screen 
+        name="AdminOverview" 
+        component={AdminDashboardScreen} 
+        options={{ 
+          title: 'System Overview',
+          drawerIcon: ({color}) => <Ionicons name="grid-outline" size={22} color={color} />,
+          headerShown: false 
+        }} 
+      />
+      <Drawer.Screen 
+        name="AdminUsers" 
+        component={ActivityScreen} 
+        options={{ 
+          title: 'Users & Experts',
+          drawerIcon: ({color}) => <Ionicons name="people-outline" size={22} color={color} />,
+          headerShown: true,
+          headerStyle: { backgroundColor: '#115C39' },
+          headerTintColor: '#fff'
+        }} 
+      />
+      <Drawer.Screen 
+        name="AdminExpertRequests" 
+        component={ActivityScreen} 
+        options={{ 
+          title: 'Expert Requests',
+          drawerIcon: ({color}) => <Ionicons name="shield-checkmark-outline" size={22} color={color} />,
+          headerShown: true,
+          headerStyle: { backgroundColor: '#115C39' },
+          headerTintColor: '#fff'
+        }} 
+      />
+      <Drawer.Screen 
+        name="AdminMarketApprovals" 
+        component={ActivityScreen} 
+        options={{ 
+          title: 'Market Approvals',
+          drawerIcon: ({color}) => <Ionicons name="cart-outline" size={22} color={color} />,
+          headerShown: true,
+          headerStyle: { backgroundColor: '#115C39' },
+          headerTintColor: '#fff'
+        }} 
+      />
+      <Drawer.Screen 
+        name="AdminProfile" 
+        component={ProfileScreen} 
+        options={{ 
+          title: 'My Profile',
+          drawerIcon: ({color}) => <Ionicons name="person-outline" size={22} color={color} />,
+          headerShown: false
+        }} 
+      />
+    </Drawer.Navigator>
+  );
+};
+
 
 // --- APP NAVIGATOR ENTRY POINT ---
 const AppNavigator = ({ userToken, userRole }) => {
@@ -239,6 +322,11 @@ const AppNavigator = ({ userToken, userRole }) => {
             <Stack.Screen name="GetStarted" component={GetStartedScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="Register" component={RegisterScreen} />
+          </>
+        ) : userRole === 'Admin' ? (
+          // ADMIN APP STACK
+          <>
+            <Stack.Screen name="AdminMain" component={AdminDrawer} />
           </>
         ) : userRole === 'Expert' ? (
           // EXPERT APP STACK
@@ -325,6 +413,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     color: '#f44336',
+    marginLeft: 10
+  },
+  loginButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E8F5E9',
+    padding: 15,
+    borderRadius: 12,
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#2E7D32'
+  },
+  loginText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2E7D32',
     marginLeft: 10
   }
 });

@@ -3,11 +3,11 @@ const mongoose = require('mongoose');
 
 async function testConnection() {
   const URI = process.env.MONGODB_URI;
-  console.log("Connecting to:", URI.split('@')[1]); // Log only the host for security
+  console.log("Connecting to:", URI); // Show full URI for local MongoDB
 
   try {
     await mongoose.connect(URI);
-    console.log("✅ Successfully connected to MongoDB Atlas!");
+    console.log("✅ Successfully connected to MongoDB!");
 
     // Create a temporary test collection and document
     const TestSchema = new mongoose.Schema({ name: String, date: Date });

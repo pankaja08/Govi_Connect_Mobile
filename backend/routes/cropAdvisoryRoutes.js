@@ -1,6 +1,7 @@
 const express = require('express');
 const cropAdvisoryController = require('../controllers/cropAdvisoryController');
 const authMiddleware = require('../middleware/auth');
+const uploadCropImage = require('../middleware/cropUpload');
 
 const router = express.Router();
 
@@ -19,11 +20,11 @@ router.use(authMiddleware.restrictTo('Expert', 'Admin'));
 router
   .route('/crops')
   .get(cropAdvisoryController.getAllCrops)
-  .post(cropAdvisoryController.createCrop);
+  .post(uploadCropImage.single('image'), cropAdvisoryController.createCrop);
 
 router
   .route('/crops/:id')
-  .patch(cropAdvisoryController.updateCrop)
+  .patch(uploadCropImage.single('image'), cropAdvisoryController.updateCrop)
   .delete(cropAdvisoryController.deleteCrop);
 
 module.exports = router;
