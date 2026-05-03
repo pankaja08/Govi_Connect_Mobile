@@ -364,8 +364,12 @@ const ForumScreen = () => {
                 }
             }
 
-            // Switch back to apiClient but without the manual Content-Type header
-            const res = await apiClient.post('/forum', formData);
+            // Add the manual Content-Type header to ensure FormData is parsed correctly
+            const res = await apiClient.post('/forum', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                },
+            });
 
             if (res.status === 201 || res.status === 200) {
                 setAskText('');

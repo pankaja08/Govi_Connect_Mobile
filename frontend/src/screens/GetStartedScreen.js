@@ -94,7 +94,7 @@ const GetStartedScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <ImageBackground 
-        source={require('../../assets/agri_bg.png')} 
+        source={require('../../assets/agri_bg.jpg')}
         style={styles.backgroundImage}
         resizeMode="cover"
       >
