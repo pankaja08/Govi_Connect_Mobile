@@ -17,7 +17,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const forumRoutes = require('./routes/forumRoutes');
 const farmTrackerRoutes = require('./routes/farmTrackerRoutes');
 const cropAdvisoryRoutes = require('./routes/cropAdvisoryRoutes');
-const productRoutes      = require('./routes/productRoutes');
+const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
@@ -55,7 +55,7 @@ mongoose.connect(DB, {
     console.error(err.message);
     console.log('\n💡 TIP: Check if your IP address is whitelisted in MongoDB Atlas:');
     console.log('   https://www.mongodb.com/docs/atlas/security-whitelist/');
-    process.exit(1); 
+    process.exit(1);
   });
 
 // Global Error Handler
@@ -68,6 +68,6 @@ app.use((err, req, res, next) => {
 });
 
 const port = process.env.PORT || 5000;
-app.listen(port, () => {
+app.listen(port, '[IP_ADDRESS]', () => {
   console.log(`Server is running on port ${port}...`);
 });
