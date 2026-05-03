@@ -66,6 +66,39 @@ const MyProductsScreen = ({ navigation }) => {
     );
   };
 
+  const handleStatusChange = (product) => {
+    Alert.alert(
+      'Update Stock Status',
+      `Change status for "${product.name}"`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'IN STOCK', 
+          onPress: () => updateStatus(product._id, 'IN STOCK') 
+        },
+        { 
+          text: 'OUT OF STOCK', 
+          onPress: () => updateStatus(product._id, 'OUT OF STOCK') 
+        },
+        { 
+          text: 'SOLD OUT', 
+          onPress: () => updateStatus(product._id, 'SOLD OUT') 
+        }
+      ]
+    );
+  };
+
+  const updateStatus = async (productId, newStatus) => {
+    try {
+      setLoading(true);
+      await productApi.update(productId, { status: newStatus });
+      fetchMyProducts();
+    } catch (err) {
+      Alert.alert('Error', 'Could not update status.');
+      setLoading(false);
+    }
+  };
+
   const renderProductItem = ({ item }) => (
     <View style={styles.card}>
       <View style={styles.cardContent}>
@@ -80,6 +113,22 @@ const MyProductsScreen = ({ navigation }) => {
         </View>
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>{item.name}</Text>
+          <TouchableOpacity 
+            style={[
+              styles.statusBadge, 
+              item.status === 'OUT OF STOCK' && styles.statusBadgeOut,
+              item.status === 'SOLD OUT' && styles.statusBadgeSold
+            ]}
+            onPress={() => handleStatusChange(item)}
+          >
+            <Text style={[
+              styles.statusText,
+              item.status === 'OUT OF STOCK' && styles.statusTextOut,
+              item.status === 'SOLD OUT' && styles.statusTextSold
+            ]}>
+              {item.status || 'IN STOCK'}
+            </Text>
+          </TouchableOpacity>
           <Text style={styles.price}>Rs. {item.price?.toFixed(2)} / {item.unit}</Text>
           <View style={styles.statsRow}>
             <View style={styles.stat}>
@@ -220,6 +269,36 @@ const styles = StyleSheet.create({
   emptySub: { fontSize: 14, color: '#888', textAlign: 'center', lineHeight: 22, marginBottom: 24 },
   startBtn: { backgroundColor: '#2E7D32', paddingHorizontal: 24, paddingVertical: 14, borderRadius: 12 },
   startBtnText: { color: '#fff', fontWeight: '700', fontSize: 16 },
+
+  statusBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#2E7D32',
+    marginBottom: 6
+  },
+  statusBadgeOut: {
+    backgroundColor: '#FFF3E0',
+    borderColor: '#EF6C00'
+  },
+  statusBadgeSold: {
+    backgroundColor: '#FFEBEE',
+    borderColor: '#C62828'
+  },
+  statusText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#2E7D32'
+  },
+  statusTextOut: {
+    color: '#EF6C00'
+  },
+  statusTextSold: {
+    color: '#C62828'
+  }
 });
 
 export default MyProductsScreen;

@@ -209,8 +209,18 @@ const ProductDetailScreen = ({ route, navigation }) => {
       {/* Details */}
       <View style={styles.detailsContainer}>
         {/* Status badge */}
-        <View style={[styles.statusBadge, product.status === 'In Stock' ? styles.inStock : styles.outOfStock]}>
-          <Text style={styles.statusText}>{product.status}</Text>
+        <View style={[
+          styles.statusBadge, 
+          product.status === 'OUT OF STOCK' && styles.outOfStock,
+          product.status === 'SOLD OUT' && styles.soldOut
+        ]}>
+          <Text style={[
+            styles.statusText,
+            product.status === 'OUT OF STOCK' && styles.outOfStockText,
+            product.status === 'SOLD OUT' && styles.soldOutText
+          ]}>
+            {product.status || 'IN STOCK'}
+          </Text>
         </View>
 
         <Text style={styles.productName}>{product.name}</Text>
@@ -314,8 +324,11 @@ const styles = StyleSheet.create({
   detailsContainer: { backgroundColor: '#fff', padding: 20, marginBottom: 8 },
   statusBadge: { alignSelf: 'flex-start', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 20, marginBottom: 10 },
   inStock: { backgroundColor: '#E8F5E9' },
-  outOfStock: { backgroundColor: '#FFEBEE' },
+  outOfStock: { backgroundColor: '#FFF3E0' },
+  soldOut: { backgroundColor: '#FFEBEE' },
   statusText: { fontSize: 12, fontWeight: '700', color: '#2E7D32' },
+  outOfStockText: { color: '#EF6C00' },
+  soldOutText: { color: '#C62828' },
   productName: { fontSize: 26, fontWeight: '900', color: '#1A1A1A', marginBottom: 8 },
   productPrice: { fontSize: 22, fontWeight: '800', color: '#1B5E20', marginBottom: 10 },
   priceUnit: { fontSize: 15, fontWeight: '400', color: '#666' },
