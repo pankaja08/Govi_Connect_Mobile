@@ -22,16 +22,18 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// Verify connection configuration on startup
-transporter.verify((error, success) => {
-  if (error) {
-    console.error('\n❌ EMAIL SERVICE ERROR: Connection failed!');
-    console.error(`❌ Details: ${error.message}`);
-    console.error('❌ Please check if you are using a Gmail App Password and that EMAIL_USER is correct.\n');
-  } else {
-    console.log('\n🚀 EMAIL SERVICE: Ready to send notifications!\n');
-  }
-});
+// Verify connection configuration on startup only if credentials are provided
+if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+  transporter.verify((error, success) => {
+    if (error) {
+      console.error('\n❌ EMAIL SERVICE ERROR: Connection failed!');
+      console.error(`❌ Details: ${error.message}`);
+      console.error('❌ Please check if you are using a Gmail App Password and that EMAIL_USER is correct.\n');
+    } else {
+      console.log('\n🚀 EMAIL SERVICE: Ready to send notifications!\n');
+    }
+  });
+}
 
 /**
  * Send an email notification for Expert Approval
