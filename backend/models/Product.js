@@ -78,8 +78,8 @@ const productSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['In Stock', 'Out of Stock'],
-    default: 'In Stock'
+    enum: ['IN STOCK', 'OUT OF STOCK', 'SOLD OUT'],
+    default: 'IN STOCK'
   }
 }, { timestamps: true });
 
