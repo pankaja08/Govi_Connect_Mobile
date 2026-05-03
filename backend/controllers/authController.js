@@ -3,7 +3,7 @@ const User = require('../models/User');
 
 const signToken = id => {
   return jwt.sign({ id }, process.env.JWT_SECRET || 'fallback_secret', {
-    expiresIn: '90d'
+    expiresIn: process.env.JWT_EXPIRES_IN || '90d'
   });
 };
 
@@ -27,10 +27,10 @@ const parseMongoError = (err) => {
 
 exports.register = async (req, res) => {
   try {
-    const { 
-      name, email, username, password, role, 
+    const {
+      name, email, username, password, role,
       nic, dob, address, province, district, contactInfo,
-      expertRegNo, areaOfExpertise, jobPosition, assignedArea 
+      expertRegNo, areaOfExpertise, jobPosition, assignedArea
     } = req.body;
 
     // Strict validation for all required fields
@@ -69,12 +69,12 @@ exports.register = async (req, res) => {
     if (age < 16) return res.status(400).json({ status: 'fail', message: 'You must be at least 16 years old to register.' });
 
     // Check if email, username or NIC already exists
-    const existingUser = await User.findOne({ 
+    const existingUser = await User.findOne({
       $or: [
-        { email: email.toLowerCase() }, 
+        { email: email.toLowerCase() },
         { username },
         { nic: nic.toUpperCase() }
-      ] 
+      ]
     });
 
     if (existingUser) {
@@ -116,7 +116,7 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { email, username, password } = req.body;
-    
+
     // Allow login with either username or email
     const identifier = username || email;
 
@@ -124,8 +124,8 @@ exports.login = async (req, res) => {
       return res.status(400).json({ message: 'Please provide username/email and password' });
     }
 
-    const user = await User.findOne({ 
-      $or: [{ email: identifier }, { username: identifier }] 
+    const user = await User.findOne({
+      $or: [{ email: identifier }, { username: identifier }]
     }).select('+password');
 
     if (!user || !(await user.comparePassword(password, user.password))) {
