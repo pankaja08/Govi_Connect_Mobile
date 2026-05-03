@@ -80,6 +80,25 @@ const safeDateStr = (dateVal) => {
     return d.toISOString().split('T')[0];
 };
 
+const formatDateToDDMMYYYY = (dateVal) => {
+    if (!dateVal) return '';
+    const d = new Date(dateVal);
+    if (isNaN(d.getTime())) return '';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+};
+
+const parseDDMMYYYY = (dateStr) => {
+    if (!dateStr) return new Date();
+    const parts = dateStr.trim().split('/');
+    if (parts.length === 3) {
+        return new Date(parts[2], parts[1] - 1, parts[0]);
+    }
+    return new Date(dateStr);
+};
+
 const FarmerTrackerScreen = () => {
     const [crops, setCrops] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -97,7 +116,7 @@ const FarmerTrackerScreen = () => {
     const [currentCrop, setCurrentCrop] = useState(null);
     const [selectedDateEvents, setSelectedDateEvents] = useState({ date: '', events: [] });
     const [newCropForm, setNewCropForm] = useState({
-        cropName: '', season: 'Yala', plantedDate: new Date(), harvestExpectedDate: new Date(), fieldSize: '', seedVariety: ''
+        cropName: '', season: 'Yala', plantedDate: '', harvestExpectedDate: '', fieldSize: '', seedVariety: ''
     });
     const [newActivityForm, setNewActivityForm] = useState({
         activityType: 'FERTILIZER', activityName: '', activityDate: new Date()
@@ -132,15 +151,15 @@ const FarmerTrackerScreen = () => {
             setNewCropForm({
                 cropName: crop.cropName,
                 season: crop.season,
-                plantedDate: new Date(crop.plantedDate),
-                harvestExpectedDate: new Date(crop.harvestExpectedDate),
+                plantedDate: formatDateToDDMMYYYY(crop.plantedDate),
+                harvestExpectedDate: formatDateToDDMMYYYY(crop.harvestExpectedDate),
                 fieldSize: String(crop.fieldSize),
                 seedVariety: crop.seedVariety || ''
             });
         } else {
             setCurrentCrop(null);
             setNewCropForm({
-                cropName: '', season: 'Yala', plantedDate: new Date(), harvestExpectedDate: new Date(), fieldSize: '', seedVariety: ''
+                cropName: '', season: 'Yala', plantedDate: '', harvestExpectedDate: '', fieldSize: '', seedVariety: ''
             });
         }
         setCropModalVisible(true);
@@ -149,8 +168,8 @@ const FarmerTrackerScreen = () => {
     const handleSaveCrop = async () => {
         if (!newCropForm.cropName || !newCropForm.fieldSize) return showAlert('Validation Error', 'Please fill required fields.');
 
-        const pDate = new Date(newCropForm.plantedDate || new Date());
-        const hDate = new Date(newCropForm.harvestExpectedDate || new Date());
+        const pDate = parseDDMMYYYY(newCropForm.plantedDate);
+        const hDate = parseDDMMYYYY(newCropForm.harvestExpectedDate);
         pDate.setHours(0, 0, 0, 0);
         hDate.setHours(0, 0, 0, 0);
 
@@ -159,7 +178,12 @@ const FarmerTrackerScreen = () => {
         }
 
         try {
-            const payload = { ...newCropForm, fieldSize: Number(newCropForm.fieldSize) };
+            const payload = { 
+                ...newCropForm, 
+                plantedDate: pDate,
+                harvestExpectedDate: hDate,
+                fieldSize: Number(newCropForm.fieldSize) 
+            };
 
             if (currentCrop) {
                 const res = await apiClient.put(`/farm/crops/${currentCrop._id}`, payload);
@@ -428,35 +452,23 @@ const FarmerTrackerScreen = () => {
                             onChange={v => setNewCropForm({ ...newCropForm, season: v })}
                         />
 
-                        <Text style={styles.inputLabel}>Planted Date</Text>
-                        {Platform.OS === 'web' ? (
-                            <View style={styles.datePickerBtn}>
-                                <WebDatePicker value={newCropForm.plantedDate} onChange={(d) => setNewCropForm({ ...newCropForm, plantedDate: d })} />
-                            </View>
-                        ) : (
-                            <TouchableOpacity
-                                style={styles.datePickerBtn}
-                                onPress={() => setDatePickerOpen({ open: true, field: 'plantedDate' })}
-                            >
-                                <Ionicons name="calendar-outline" size={16} color="#9CA3AF" style={{ marginRight: 8 }} />
-                                <Text style={styles.datePickerText}>{newCropForm.plantedDate.toLocaleDateString()}</Text>
-                            </TouchableOpacity>
-                        )}
+                        <Text style={styles.inputLabel}>Planted Date (DD/MM/YYYY)</Text>
+                        <TextInput 
+                            style={styles.input} 
+                            value={newCropForm.plantedDate} 
+                            onChangeText={t => setNewCropForm({ ...newCropForm, plantedDate: t })} 
+                            placeholder="e.g. 15/05/2026" 
+                            keyboardType="numeric"
+                        />
 
-                        <Text style={styles.inputLabel}>Expected Harvest Date</Text>
-                        {Platform.OS === 'web' ? (
-                            <View style={styles.datePickerBtn}>
-                                <WebDatePicker value={newCropForm.harvestExpectedDate} onChange={(d) => setNewCropForm({ ...newCropForm, harvestExpectedDate: d })} />
-                            </View>
-                        ) : (
-                            <TouchableOpacity
-                                style={styles.datePickerBtn}
-                                onPress={() => setDatePickerOpen({ open: true, field: 'harvestExpectedDate' })}
-                            >
-                                <Ionicons name="calendar-outline" size={16} color="#9CA3AF" style={{ marginRight: 8 }} />
-                                <Text style={styles.datePickerText}>{newCropForm.harvestExpectedDate.toLocaleDateString()}</Text>
-                            </TouchableOpacity>
-                        )}
+                        <Text style={styles.inputLabel}>Expected Harvest Date (DD/MM/YYYY)</Text>
+                        <TextInput 
+                            style={styles.input} 
+                            value={newCropForm.harvestExpectedDate} 
+                            onChangeText={t => setNewCropForm({ ...newCropForm, harvestExpectedDate: t })} 
+                            placeholder="e.g. 20/08/2026" 
+                            keyboardType="numeric"
+                        />
 
                         <Text style={styles.inputLabel}>Field Size (Acres)</Text>
                         <TextInput style={styles.input} keyboardType="numeric" value={newCropForm.fieldSize} onChangeText={t => setNewCropForm({ ...newCropForm, fieldSize: t })} placeholder="e.g. 2.5" />
