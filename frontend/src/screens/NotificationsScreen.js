@@ -73,11 +73,23 @@ const NotificationsScreen = ({ navigation }) => {
     return `${diffDays}d ago`;
   };
 
+  const getNotificationIcon = (type) => {
+    switch (type) {
+      case 'product_approval':
+        return 'checkmark-circle-outline';
+      case 'forum_reply':
+        return 'chatbubbles-outline';
+      case 'expert_reply':
+      default:
+        return 'chatbubble-ellipses-outline';
+    }
+  };
+
   const renderItem = ({ item }) => (
     <View style={[styles.notificationCard, !item.isRead && styles.unreadCard]}>
       {!item.isRead && <View style={styles.unreadDot} />}
       <View style={styles.iconContainer}>
-        <Ionicons name="chatbubble-ellipses" size={22} color="#2E7D32" />
+        <Ionicons name={getNotificationIcon(item.type)} size={22} color="#2E7D32" />
       </View>
       <View style={styles.textContainer}>
         <Text style={styles.title}>{item.title}</Text>
@@ -132,7 +144,7 @@ const NotificationsScreen = ({ navigation }) => {
         <View style={styles.centered}>
           <Ionicons name="notifications-off-outline" size={60} color="#ccc" />
           <Text style={styles.emptyText}>No notifications yet</Text>
-          <Text style={styles.emptySubText}>When an expert replies to your comment, you'll see it here.</Text>
+          <Text style={styles.emptySubText}>When there are updates on your products or forum questions, you'll see them here.</Text>
         </View>
       )}
 

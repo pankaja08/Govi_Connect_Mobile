@@ -33,50 +33,65 @@ exports.register = async (req, res) => {
       expertRegNo, areaOfExpertise, jobPosition, assignedArea 
     } = req.body;
 
-    // Log incoming registration attempt for debugging
-    console.log('\n📥 REGISTRATION ATTEMPT:');
-    console.log(`  Name: ${name}, Email: ${email}, Username: ${username}, Role: ${role}`);
-    console.log('============================\n');
+    // Strict validation for all required fields
+    if (!name || !email || !username || !password || !nic || !dob || !address || !province || !district || !contactInfo) {
+      return res.status(400).json({ status: 'fail', message: 'All personal information fields are required.' });
+    }
 
-    // Basic required fields check before even hitting DB
-    if (!name || !email || !username || !password) {
-      return res.status(400).json({ status: 'fail', message: 'Name, email, username, and password are required.' });
+    if (role === 'Expert') {
+      if (!expertRegNo || !areaOfExpertise || !jobPosition || !assignedArea) {
+        return res.status(400).json({ status: 'fail', message: 'All professional credentials are required for experts.' });
+      }
     }
 
     if (password.length < 6) {
       return res.status(400).json({ status: 'fail', message: 'Password must be at least 6 characters long.' });
     }
 
-    // Check if email or username already exists
+    // NIC validation
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+    if (!nicRegex.test(nic)) {
+      return res.status(400).json({ status: 'fail', message: 'Invalid NIC format.' });
+    }
+
+    // Phone validation
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(contactInfo)) {
+      return res.status(400).json({ status: 'fail', message: 'Invalid contact number (10 digits starting with 0).' });
+    }
+
+    // Age validation (16+)
+    const dobDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - dobDate.getFullYear();
+    const m = today.getMonth() - dobDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) age--;
+    if (age < 16) return res.status(400).json({ status: 'fail', message: 'You must be at least 16 years old to register.' });
+
+    // Check if email, username or NIC already exists
     const existingUser = await User.findOne({ 
-      $or: [{ email: email.toLowerCase() }, { username }] 
+      $or: [
+        { email: email.toLowerCase() }, 
+        { username },
+        { nic: nic.toUpperCase() }
+      ] 
     });
 
     if (existingUser) {
-      const field = existingUser.email === email.toLowerCase() ? 'Email' : 'Username';
-      return res.status(400).json({ status: 'fail', message: `${field} already in use. Please try a different one.` });
+      let field = 'User';
+      if (existingUser.email === email.toLowerCase()) field = 'Email';
+      else if (existingUser.username === username) field = 'Username';
+      else if (existingUser.nic === nic.toUpperCase()) field = 'NIC';
+      return res.status(400).json({ status: 'fail', message: `${field} already in use.` });
     }
 
-    // Set status to Pending for new Experts
-    const status = role === 'Expert' ? 'Pending' : 'Active';
-
     const newUser = await User.create({
-      name,
-      email,
-      username,
-      password,
+      name, email, username, password,
       role: role || 'User',
-      status,
-      nic: nic || '',
-      dob: dob || '',
-      address: address || '',
-      province: province || '',
-      district: district || '',
-      contactInfo: contactInfo || '',
-      expertRegNo: expertRegNo || '',
-      areaOfExpertise: areaOfExpertise || '',
-      jobPosition: jobPosition || '',
-      assignedArea: assignedArea || ''
+      status: role === 'Expert' ? 'Pending' : 'Active',
+      nic: nic.toUpperCase(),
+      dob, address, province, district, contactInfo,
+      expertRegNo, areaOfExpertise, jobPosition, assignedArea
     });
 
     const token = signToken(newUser._id);

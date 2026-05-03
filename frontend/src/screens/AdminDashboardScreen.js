@@ -1,8 +1,9 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useState, useCallback, useRef } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons, FontAwesome5 } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import apiClient from '../api/client';
 import CountUp from '../components/CountUp';
 import CustomDonutChart from '../components/CustomDonutChart';
@@ -11,8 +12,8 @@ import GeoDistributionChart from '../components/GeoDistributionChart';
 
 const { width } = Dimensions.get('window');
 
-const StatCard = ({ title, value, colors, icon, iconType = 'Ionicons', delay = 0 }) => (
-  <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper}>
+const StatCard = ({ title, value, colors, icon, iconType = 'Ionicons', delay = 0, onPress }) => (
+  <TouchableOpacity activeOpacity={0.9} style={styles.cardWrapper} onPress={onPress}>
     <LinearGradient colors={colors} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.statCard}>
       <View style={styles.cardHeader}>
         <Text style={styles.statTitle}>{title}</Text>
@@ -40,13 +41,49 @@ const AdminDashboardScreen = ({ navigation }) => {
     farmers: 0,
     agriOfficers: 0,
     pendingExperts: 0,
+    pendingProducts: 0,
     geographicStats: []
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]         = useState(true);
+  const [cropsBySeason, setCrops]     = useState({});
+  const [cropLoading, setCropLoading] = useState(true);
 
-  useEffect(() => {
+  // ── Live refresh: re-fetch on focus + every 30s polling ─────────────────
+  const intervalRef = useRef(null);
+
+  const refreshAll = useCallback(async () => {
     fetchStats();
+    fetchCropPerformance();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      // Immediate fetch when screen comes into focus
+      refreshAll();
+
+      // Poll every 30 seconds while screen is active
+      intervalRef.current = setInterval(refreshAll, 30_000);
+
+      return () => {
+        // Clear polling when screen loses focus
+        if (intervalRef.current) clearInterval(intervalRef.current);
+      };
+    }, [refreshAll])
+  );
+
+  const fetchCropPerformance = async () => {
+    setCropLoading(true);
+    try {
+      const res = await apiClient.get('/users/admin/crop-performance');
+      if (res.data.status === 'success') {
+        setCrops(res.data.data.cropsBySeason || {});
+      }
+    } catch (e) {
+      console.log('Crop perf error:', e.message);
+    } finally {
+      setCropLoading(false);
+    }
+  };
 
   const fetchStats = async () => {
     try {
@@ -73,10 +110,15 @@ const AdminDashboardScreen = ({ navigation }) => {
           <Text style={styles.headerTitle}>System Overview</Text>
           <Text style={styles.headerSubtitle}>Live metrics and platform statistics</Text>
         </View>
-        <TouchableOpacity style={styles.reportBtn}>
-          <Ionicons name="document-text" size={16} color="#fff" />
-          <Text style={styles.reportBtnText}>Report</Text>
-        </TouchableOpacity>
+        <View style={styles.headerActions}>
+          <TouchableOpacity style={styles.refreshIconBtn} onPress={refreshAll}>
+            <Ionicons name="refresh" size={18} color="#115C39" />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.reportBtn} onPress={() => navigation.navigate('AdminReport')}>
+            <Ionicons name="document-text" size={16} color="#fff" />
+            <Text style={styles.reportBtnText}>Report</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
@@ -115,9 +157,18 @@ const AdminDashboardScreen = ({ navigation }) => {
               <StatCard
                 title="Pending"
                 value={stats.pendingExperts.toString()}
-                colors={['# ffffffff', '#ffffffff']}
+                colors={['#ffffffff', '#ffffffff']}
                 icon="time"
                 delay={300}
+              />
+              <StatCard
+                title="Approvals"
+                value={stats.pendingProducts?.toString() || '0'}
+                colors={['#ffffffff', '#ffffffff']}
+                icon="storefront"
+                iconType="Ionicons"
+                delay={400}
+                onPress={() => navigation.navigate('AdminMarketApprovals')}
               />
             </>
           )}
@@ -132,9 +183,12 @@ const AdminDashboardScreen = ({ navigation }) => {
 
         {/* Charts Row equivalent */}
         <View style={styles.rowCards}>
-          {/* User Distribution Fake Chart */}
+          {/* User Distribution Chart */}
           <View style={styles.cardLarge}>
             <Text style={styles.cardTitle}>User Distribution</Text>
+            <Text style={styles.cardDesc}>
+              Visualizes the breakdown of registered users by their roles to understand the platform's user base composition.
+            </Text>
             <CustomDonutChart
               farmers={stats.farmers}
               agriOfficers={stats.agriOfficers}
@@ -142,48 +196,117 @@ const AdminDashboardScreen = ({ navigation }) => {
             />
           </View>
 
-          {/* Geographical Distribution dynamic Chart */}
+          {/* Geographical Distribution Chart */}
           <View style={styles.cardLarge}>
-            <View style={styles.geoCardHeader}>
-              <Text style={styles.cardTitle}>Geographical Distribution</Text>
-              <View style={styles.geoBadge}>
-                <Text style={styles.geoBadgeText}>Farmers by District</Text>
-              </View>
-            </View>
+            <Text style={styles.cardTitle}>Geographical Distribution (Farmers)</Text>
+            <Text style={styles.cardDesc}>
+              Shows the concentration of farmers across different districts, highlighting regions with the highest platform adoption.
+            </Text>
             <GeoDistributionChart data={stats.geographicStats} />
           </View>
         </View>
 
-        {/* Crop Performance Section */}
-        <Text style={styles.sectionTitle}>
-          <MaterialCommunityIcons name="seed-outline" size={20} color="#FFB300" /> Crop Performance
-        </Text>
+        {/* ── Crop Performance & Analytics ──────────────────────── */}
+        <View style={styles.cropSectionHeader}>
+          <MaterialCommunityIcons name="seed-outline" size={20} color="#FFB300" />
+          <Text style={styles.sectionTitle}> Crop Performance & Analytics</Text>
+        </View>
 
-        <View style={styles.cropCardsContainer}>
-          <View style={styles.cropCard}>
-            <Text style={styles.cropTitle}>🏆 Best Crops: Yala</Text>
-            <View style={styles.cropBarRow}>
-              <Text style={styles.cropLabel}>Banana</Text>
-              <View style={styles.cropBarBg}><View style={[styles.cropBarFill, { width: '80%', backgroundColor: '#FFB300' }]} /></View>
-            </View>
+        {/* Formula info card */}
+        <View style={styles.formulaCard}>
+          <View style={styles.formulaIconWrap}>
+            <Ionicons name="information-circle-outline" size={20} color="#4285F4" />
           </View>
-
-          <View style={styles.cropCard}>
-            <Text style={styles.cropTitle}>🏆 Best Crops: Maha</Text>
-            <View style={styles.cropBarRow}>
-              <Text style={styles.cropLabel}>Mango</Text>
-              <View style={styles.cropBarBg}><View style={[styles.cropBarFill, { width: '90%', backgroundColor: '#2196F3' }]} /></View>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.formulaCardTitle}>Understanding Crop Performance Scoring</Text>
+            <Text style={styles.formulaCardDesc}>
+              The Crop Performance charts represent the top-performing crops for each agricultural season based on our intelligent{' '}
+              <Text style={styles.formulaBold}>Performance Scorer (CPS)</Text>.
+            </Text>
+            <View style={styles.formulaPill}>
+              <Text style={styles.formulaLabel}>FORMULA:{'  '}</Text>
+              <Text style={styles.formulaText}>CPS = (Total Income / Total Acres) × (Total Yield / Total Acres)</Text>
             </View>
-          </View>
-
-          <View style={styles.cropCard}>
-            <Text style={styles.cropTitle}>🏆 Best Crops: Inter</Text>
-            <View style={styles.cropBarRow}>
-              <Text style={styles.cropLabel}>Pumpkin</Text>
-              <View style={styles.cropBarBg}><View style={[styles.cropBarFill, { width: '60%', backgroundColor: '#4CAF50' }]} /></View>
-            </View>
+            <Text style={styles.formulaNote}>* Combines profitability per acre with yield productivity.</Text>
           </View>
         </View>
+
+        {/* Season cards */}
+        {cropLoading ? (
+          <View style={styles.cropLoadingBox}>
+            <ActivityIndicator size="small" color="#115C39" />
+            <Text style={styles.cropLoadingText}>Calculating crop scores…</Text>
+          </View>
+        ) : Object.keys(cropsBySeason).length === 0 ? (
+          <View style={styles.cropEmptyBox}>
+            <MaterialCommunityIcons name="sprout-outline" size={36} color="#B0BEC5" />
+            <Text style={styles.cropEmptyText}>No crop log data available yet.</Text>
+          </View>
+        ) : (
+          <View style={styles.seasonScroll}>
+            {['Yala', 'Maha', 'Inter-season'].filter(s => cropsBySeason[s]).map((season) => {
+              const crops = cropsBySeason[season];
+              const COLORS = {
+                Yala:           { bar: '#FFB300', border: '#FFB300', bg: '#FFFDE7' },
+                Maha:           { bar: '#4285F4', border: '#4285F4', bg: '#E8F0FE' },
+                'Inter-season': { bar: '#34A853', border: '#34A853', bg: '#E6F4EA' },
+              };
+              const theme    = COLORS[season] || { bar: '#115C39', border: '#115C39', bg: '#E8F5E9' };
+              const maxCPS   = Math.max(...crops.map(c => c.cpsScore), 1);
+
+              const fmtCPS = (v) => {
+                if (v >= 1e9) return `${(v / 1e9).toFixed(1)}B`;
+                if (v >= 1e6) return `${(v / 1e6).toFixed(1)}M`;
+                if (v >= 1e3) return `${(v / 1e3).toFixed(0)}K`;
+                return v.toFixed(0);
+              };
+
+              const LABEL_MAP = {
+                Yala:           'Best Crops: Yala',
+                Maha:           'Best Crops: Maha',
+                'Inter-season': 'Best Crops: Inter-Season',
+              };
+
+              return (
+                <View
+                  key={season}
+                  style={[
+                    styles.seasonCard,
+                    { borderColor: theme.border, backgroundColor: theme.bg },
+                  ]}
+                >
+                  <Text style={[styles.seasonCardTitle, { color: theme.border }]}>
+                    🏆 {LABEL_MAP[season] || `Best Crops: ${season}`}
+                  </Text>
+
+                  {crops.slice(0, 6).map((crop, idx) => {
+                    const barWPercent = Math.max((crop.cpsScore / maxCPS) * 100, 2);
+                    return (
+                      <View key={idx} style={styles.barRow}>
+                        <Text style={styles.barCropLabel} numberOfLines={1}>{crop.cropName}</Text>
+                        <View style={[styles.barTrack, { flex: 1 }]}>
+                          <View style={[styles.barFillRect, { width: `${barWPercent}%`, backgroundColor: theme.bar }]} />
+                        </View>
+                        <Text style={styles.barCpsValue}>{fmtCPS(crop.cpsScore)}</Text>
+                      </View>
+                    );
+                  })}
+
+                  {/* X-axis tick labels aligned with the bars */}
+                  <View style={[styles.barRow, { marginBottom: 0, marginTop: 4 }]}>
+                    <View style={{ width: 80, marginRight: 4 }} />
+                    <View style={[styles.xAxisRow, { flex: 1 }]}>
+                      <Text style={styles.xTick}>0</Text>
+                      <Text style={styles.xTick}>{fmtCPS(maxCPS * 0.5)}</Text>
+                      <Text style={styles.xTick}>{fmtCPS(maxCPS)}</Text>
+                    </View>
+                    <View style={{ width: 55, marginLeft: 4 }} />
+                  </View>
+                </View>
+              );
+            })}
+          </View>
+        )}
 
       </ScrollView>
     </SafeAreaView>
@@ -219,6 +342,22 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#757575',
   },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginTop: width < 380 ? 8 : 0,
+  },
+  refreshIconBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
   reportBtn: {
     flexDirection: 'row',
     backgroundColor: '#1B7A43',
@@ -226,7 +365,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderRadius: 8,
     alignItems: 'center',
-    marginTop: width < 380 ? 8 : 0,
   },
   reportBtnText: {
     color: '#fff',
@@ -257,11 +395,20 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     borderTopWidth: 5,
     borderTopColor: '#2b973bff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.15,
-    shadowRadius: 8,
-    elevation: 5,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 5,
+      },
+      web: {
+        boxShadow: '0px 4px 8px rgba(0,0,0,0.15)',
+      },
+    }),
 
   },
   cardHeader: {
@@ -362,17 +509,32 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0px 2px 4px rgba(0,0,0,0.05)',
+      },
+    }),
   },
   cardTitle: {
     fontSize: 14,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 0,
+    marginBottom: 4,
+  },
+  cardDesc: {
+    fontSize: 11,
+    color: '#6B7280',
+    lineHeight: 16,
+    marginBottom: 10,
   },
   geoCardHeader: {
     flexDirection: 'row',
@@ -489,11 +651,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 2,
+      },
+      web: {
+        boxShadow: '0px 2px 4px rgba(0,0,0,0.05)',
+      },
+    }),
   },
   cropTitle: {
     fontSize: 14,
@@ -502,24 +673,149 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     textAlign: 'center',
   },
-  cropBarRow: {
+  cropBarRow: { flexDirection: 'row', alignItems: 'center' },
+  cropLabel:  { width: 60, fontSize: 12, color: '#757575' },
+  cropBarBg:  { flex: 1, height: 80, justifyContent: 'center' },
+  cropBarFill:{ height: '100%', borderRadius: 4 },
+
+  // ── Crop Performance Section ─────────────────────────────────────
+  cropSectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 12,
+    marginTop: 8,
   },
-  cropLabel: {
-    width: 60,
+  // Formula info card
+  formulaCard: {
+    flexDirection: 'row',
+    backgroundColor: '#EEF2FF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#C7D7FD',
+    gap: 10,
+  },
+  formulaIconWrap: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: '#DBEAFE',
+    justifyContent: 'center', alignItems: 'center',
+    marginTop: 2,
+  },
+  formulaCardTitle: {
+    fontSize: 13, fontWeight: '800', color: '#1E3A8A', marginBottom: 3,
+  },
+  formulaCardDesc: {
+    fontSize: 11, color: '#4B5563', lineHeight: 16, marginBottom: 8,
+  },
+  formulaPill: {
+    flexDirection: 'row',
+    backgroundColor: '#1E293B',
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    flexWrap: 'wrap',
+    alignItems: 'center',
+  },
+  formulaLabel: {
+    fontSize: 10, fontWeight: '900', color: '#94A3B8', letterSpacing: 0.5,
+  },
+  formulaText: {
+    fontSize: 10, fontWeight: '700', color: '#7DD3FC', fontFamily: 'monospace',
+  },
+  formulaBold: {
+    fontWeight: '800', fontStyle: 'italic',
+  },
+  formulaNote: {
+    fontSize: 10,
+    color: '#6B8EAD',
+    fontStyle: 'italic',
+    marginTop: 6,
+  },
+  // Loading / empty
+  cropLoadingBox: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 30,
+    alignItems: 'center',
+    gap: 10,
+    marginBottom: 16,
+  },
+  cropLoadingText: { fontSize: 13, color: '#757575' },
+  cropEmptyBox: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 30,
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+  },
+  cropEmptyText: { fontSize: 13, color: '#B0BEC5', fontStyle: 'italic' },
+  // Season card scroll
+  seasonScroll: {
+    gap: 14,
+    paddingBottom: 4,
+  },
+  seasonCard: {
+    borderRadius: 14,
+    borderWidth: 2,
+    padding: 16,
+    marginBottom: 6,
+    // shadow
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  seasonCardTitle: {
+    fontSize: 15,
+    fontWeight: '800',
+    textAlign: 'center',
+    marginBottom: 18,
+  },
+  // Horizontal bar
+  barRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  barCropLabel: {
+    width: 80,
     fontSize: 12,
-    color: '#757575',
+    fontWeight: '600',
+    color: '#374151',
+    marginRight: 4,
   },
-  cropBarBg: {
-    flex: 1,
-    height: 80,
+  barTrack: {
+    height: 26,
+    backgroundColor: 'rgba(0,0,0,0.07)',
+    borderRadius: 5,
+    overflow: 'hidden',
     justifyContent: 'center',
   },
-  cropBarFill: {
+  barFillRect: {
     height: '100%',
-    borderRadius: 4,
-  }
+    borderRadius: 5,
+  },
+  barCpsValue: {
+    width: 55,
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#374151',
+    textAlign: 'right',
+    marginLeft: 4,
+  },
+  // X-axis
+  xAxisRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 4,
+  },
+  xTick: {
+    fontSize: 9,
+    color: '#9CA3AF',
+  },
 });
 
 export default AdminDashboardScreen;

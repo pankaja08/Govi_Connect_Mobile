@@ -171,9 +171,21 @@ const styles = StyleSheet.create({
   },
   logoLogo: {
     marginBottom: 20,
-    textShadowColor: 'rgba(0,0,0,0.3)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 10,
+    ...Platform.select({
+      ios: {
+        textShadowColor: 'rgba(0,0,0,0.3)',
+        textShadowOffset: { width: 0, height: 4 },
+        textShadowRadius: 10,
+      },
+      android: {
+        textShadowColor: 'rgba(0,0,0,0.3)',
+        textShadowOffset: { width: 0, height: 4 },
+        textShadowRadius: 10,
+      },
+      web: {
+        textShadow: '0px 4px 10px rgba(0,0,0,0.3)',
+      },
+    }),
   },
   title: {
     fontSize: 42,
@@ -181,9 +193,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     textAlign: 'center',
     lineHeight: 50,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 4 },
-    textShadowRadius: 10,
+    ...Platform.select({
+      ios: {
+        textShadowColor: 'rgba(0,0,0,0.3)',
+        textShadowOffset: { width: 0, height: 4 },
+        textShadowRadius: 10,
+      },
+      android: {
+        textShadowColor: 'rgba(0,0,0,0.3)',
+        textShadowOffset: { width: 0, height: 4 },
+        textShadowRadius: 10,
+      },
+      web: {
+        textShadow: '0px 4px 10px rgba(0,0,0,0.3)',
+      },
+    }),
     marginBottom: 15,
   },
   subtitle: {
@@ -204,11 +228,20 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: 400,
     justifyContent: 'space-between',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 15,
-    elevation: 8,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 10 },
+        shadowOpacity: 0.3,
+        shadowRadius: 15,
+      },
+      android: {
+        elevation: 8,
+      },
+      web: {
+        boxShadow: '0px 10px 15px rgba(0,0,0,0.3)',
+      },
+    }),
   },
   pillText: {
     fontSize: 18,

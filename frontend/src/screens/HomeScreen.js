@@ -17,6 +17,7 @@ import {
   Keyboard
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
@@ -342,7 +343,13 @@ const HomeScreen = ({ navigation }) => {
         colors={['#15bf80ff', '#d2f39eff', '#b6f56fff']}
         style={styles.gradientBg}
       >
-        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent} 
+          showsVerticalScrollIndicator={false} 
+          keyboardShouldPersistTaps="handled"
+          scrollEventThrottle={16}
+          keyboardDismissMode="on-drag"
+        >
 
           {/* Custom Header */}
           <View style={styles.headerRow}>
@@ -641,14 +648,14 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#15bf80ff' },
   gradientBg: { flex: 1 },
   centered: { flex: 2, justifyContent: 'center', alignItems: 'center' },
-  scrollContent: { flexGrow: 1, paddingTop: Platform.OS === 'android' ? 40 : 10 },
+  scrollContent: { flexGrow: 1, paddingTop: Platform.OS === 'android' ? hp('2%') : 10 },
 
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    marginBottom: 20,
+    paddingHorizontal: wp('5%'),
+    marginBottom: hp('2%'),
   },
   iconCircleBtn: {
     width: 44,
@@ -739,8 +746,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   greetingContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 20, // Slightly reduced since the bell is gone
+    paddingHorizontal: wp('5%'),
+    marginBottom: hp('2.5%'),
     alignItems: 'flex-start'
   },
   greetingTexts: {
@@ -796,7 +803,7 @@ const styles = StyleSheet.create({
   },
 
   carouselItem: {
-    height: 190,
+    height: hp('24%'),
     borderRadius: 25,
     overflow: 'hidden',
     position: 'relative',
@@ -956,7 +963,7 @@ const styles = StyleSheet.create({
     paddingBottom: 15
   },
   blogItem: {
-    width: 280,
+    width: wp('70%'),
     backgroundColor: '#ffffff',
     borderRadius: 24,
     marginRight: 16,
@@ -974,7 +981,7 @@ const styles = StyleSheet.create({
   },
   blogThumb: {
     width: '100%',
-    height: 160, // Slightly taller for a better aspect ratio
+    height: hp('20%'), // Slightly taller for a better aspect ratio
   },
   imageBadge: {
     position: 'absolute',

@@ -89,18 +89,18 @@ const ActivityScreen = () => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>New Farming Activity</Text>
-            <TextInput 
-              style={styles.input} 
-              placeholder="Title (e.g., Water Plants)" 
+            <TextInput
+              style={styles.input}
+              placeholder="Title (e.g., Water Plants)"
               value={currentActivity.title}
-              onChangeText={text => setCurrentActivity({...currentActivity, title: text})}
+              onChangeText={text => setCurrentActivity({ ...currentActivity, title: text })}
             />
-            <TextInput 
-              style={[styles.input, { height: 80 }]} 
-              placeholder="Description" 
+            <TextInput
+              style={[styles.input, { height: 80 }]}
+              placeholder="Description"
               multiline
               value={currentActivity.description}
-              onChangeText={text => setCurrentActivity({...currentActivity, description: text})}
+              onChangeText={text => setCurrentActivity({ ...currentActivity, description: text })}
             />
             <View style={styles.modalActions}>
               <TouchableOpacity style={[styles.modalBtn, { backgroundColor: '#4CAF50' }]} onPress={handleAddActivity}>

@@ -20,6 +20,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import apiClient from '../api/client';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { SRI_LANKA_MAP } from '../constants/locations';
 import { AuthContext } from '../context/AuthContext';
 
@@ -41,6 +42,7 @@ const ProfileScreen = ({ navigation }) => {
     district: '',
     location: ''
   });
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     // Force hide header to prevent double header issue
@@ -75,7 +77,39 @@ const ProfileScreen = ({ navigation }) => {
   };
 
   const handleUpdate = async () => {
-    if (!formData.name.trim()) return Alert.alert('Invalid Input', 'Name cannot be empty');
+    const { name, email, nic, dob, contactInfo } = formData;
+    
+    if (!name.trim()) return Alert.alert('Invalid Input', 'Name cannot be empty');
+    
+    // 1. Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (email && !emailRegex.test(email)) {
+      return Alert.alert('Invalid Email', 'Please enter a valid email address.');
+    }
+
+    // 2. NIC validation
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+    if (nic && !nicRegex.test(nic)) {
+      return Alert.alert('Invalid NIC', 'Invalid NIC format (e.g. 123456789V or 12 digits)');
+    }
+
+    // 3. Contact Number validation
+    const phoneRegex = /^0\d{9}$/;
+    if (contactInfo && !phoneRegex.test(contactInfo)) {
+      return Alert.alert('Invalid Contact', 'Contact number must start with 0 and be exactly 10 digits');
+    }
+
+    // 4. Age validation (16+)
+    if (dob) {
+      const dobDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - dobDate.getFullYear();
+      const m = today.getMonth() - dobDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) age--;
+      if (age < 16) {
+        return Alert.alert('Invalid Age', 'You must be at least 16 years old.');
+      }
+    }
 
     try {
       const response = await apiClient.put('/users/updateMe', formData);
@@ -83,7 +117,15 @@ const ProfileScreen = ({ navigation }) => {
       setIsEditing(false);
       Alert.alert('Success', 'Profile updated successfully 🪴');
     } catch (error) {
-      Alert.alert('Error', 'Failed to update profile information');
+      const errorMsg = error.response?.data?.message || 'Failed to update profile information';
+      Alert.alert('Error', errorMsg);
+    }
+  };
+
+  const onDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      setFormData({ ...formData, dob: selectedDate.toISOString().split('T')[0] });
     }
   };
 
@@ -176,7 +218,14 @@ const ProfileScreen = ({ navigation }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="light-content" translucent backgroundColor="transparent" />
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false} bounces={false}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContent} 
+        showsVerticalScrollIndicator={false} 
+        scrollEventThrottle={16}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+        bounces={true}
+      >
 
         {/* Header Curve */}
         <View style={styles.headerContainer}>
@@ -248,7 +297,38 @@ const ProfileScreen = ({ navigation }) => {
           <DetailRow icon="card-outline" label="NIC Number" value={user?.nic} field="nic" />
           <DetailRow icon="mail-outline" label="Email Address" value={formData.email} field="email" />
           <DetailRow icon="call-outline" label="Contact Number" value={user?.contactInfo} field="contactInfo" keyboard="phone-pad" />
-          <DetailRow icon="calendar-outline" label="Date of Birth" value={user?.dob} field="dob" />
+          
+          <View style={styles.detailRow}>
+            <View style={styles.iconContainer}>
+              <Ionicons name="calendar-outline" size={20} color="#666" />
+            </View>
+            <View style={styles.textContainer}>
+              <Text style={styles.detailLabel}>Date of Birth</Text>
+              {isEditing ? (
+                <TouchableOpacity 
+                  onPress={() => setShowDatePicker(true)}
+                  style={styles.pickerButton}
+                >
+                  <Text style={[styles.detailInput, !formData.dob && {color: '#999'}]}>
+                    {formData.dob || 'Select Birthday'}
+                  </Text>
+                  <Ionicons name="calendar" size={18} color="#2E7D32" />
+                </TouchableOpacity>
+              ) : (
+                <Text style={styles.detailValue}>{user?.dob || 'Not provided'}</Text>
+              )}
+            </View>
+          </View>
+
+          {showDatePicker && (
+            <DateTimePicker
+              value={formData.dob ? new Date(formData.dob) : new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
+              mode="date"
+              display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+              onChange={onDateChange}
+              maximumDate={new Date()}
+            />
+          )}
           
           <SearchablePicker 
             icon="location-outline"

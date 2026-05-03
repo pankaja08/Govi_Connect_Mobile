@@ -23,9 +23,19 @@ const notificationSchema = new mongoose.Schema(
       ref: 'Comment',
       default: null
     },
+    questionId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Question',
+      default: null
+    },
+    productId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Product',
+      default: null
+    },
     type: {
       type: String,
-      enum: ['expert_reply'],
+      enum: ['expert_reply', 'product_approval', 'forum_reply'],
       default: 'expert_reply'
     },
     title: {

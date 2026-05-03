@@ -47,9 +47,8 @@ const CountUp = ({ value, duration = 1000, delay = 0, style }) => {
     <AnimatedTextInput
       underlineColorAndroid="transparent"
       editable={false}
-      pointerEvents="none"
       defaultValue="0"
-      style={[styles.defaultStyle, style]}
+      style={[styles.defaultStyle, style, { pointerEvents: 'none' }]}
       animatedProps={animatedProps}
     />
   );

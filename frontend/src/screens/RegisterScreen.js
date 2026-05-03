@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import apiClient from '../api/client';
 
 const SRI_LANKA_MAP = {
@@ -118,6 +119,7 @@ const RegisterScreen = ({ navigation }) => {
 
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const validate = () => {
     let newErrors = {};
@@ -144,7 +146,13 @@ const RegisterScreen = ({ navigation }) => {
       newErrors.nic = 'Invalid NIC format (e.g. 123456789V or 12 digits)';
     }
 
-    // DOB validation (Age > 17)
+    // Contact number validation (Sri Lanka format: starts with 0, 10 digits)
+    const phoneRegex = /^0\d{9}$/;
+    if (formData.contactInfo && !phoneRegex.test(formData.contactInfo)) {
+      newErrors.contactInfo = 'Must start with 0 and have exactly 10 digits';
+    }
+
+    // DOB validation (Age > 15)
     if (formData.dob) {
       const dobDate = new Date(formData.dob);
       const today = new Date();
@@ -153,10 +161,10 @@ const RegisterScreen = ({ navigation }) => {
       if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < dobDate.getDate())) {
         age--;
       }
-      if (isNaN(dobDate.getTime()) || !/^\d{4}-\d{2}-\d{2}$/.test(formData.dob)) {
-        newErrors.dob = 'Use format YYYY-MM-DD';
-      } else if (age < 17) {
-        newErrors.dob = 'Must be at least 17 years old';
+      if (isNaN(dobDate.getTime())) {
+        newErrors.dob = 'Invalid date';
+      } else if (age < 16) {
+        newErrors.dob = 'Must be at least 16 years old';
       }
     }
 
@@ -169,6 +177,16 @@ const RegisterScreen = ({ navigation }) => {
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      updateField('dob', `${year}-${month}-${day}`);
+    }
   };
 
   const updateField = (field, value) => {
@@ -224,7 +242,31 @@ const RegisterScreen = ({ navigation }) => {
             <FormInput label="NIC Number" icon="card-outline" value={formData.nic} onChangeText={(t) => updateField('nic', t)} placeholder="123456789V or 12 digits" error={errors.nic} />
             <FormInput label="Email Address" icon="mail-outline" value={formData.email} onChangeText={(t) => updateField('email', t)} placeholder="email@example.com" keyboard="email-address" error={errors.email} />
             <FormInput label="Contact Number" icon="call-outline" value={formData.contactInfo} onChangeText={(t) => updateField('contactInfo', t)} placeholder="07XXXXXXXX" keyboard="phone-pad" error={errors.contactInfo} />
-            <FormInput label="Date of Birth" icon="calendar-outline" value={formData.dob} onChangeText={(t) => updateField('dob', t)} placeholder="YYYY-MM-DD" error={errors.dob} />
+            
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Date of Birth <Text style={{color: 'red'}}>*</Text></Text>
+              <TouchableOpacity 
+                style={[styles.inputWrapper, errors.dob && styles.inputErrorBorder]} 
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={20} color={errors.dob ? "#D32F2F" : "#2E7D32"} style={styles.inputIcon} />
+                <Text style={[styles.input, !formData.dob && {color: '#999'}]}>
+                  {formData.dob || "YYYY-MM-DD"}
+                </Text>
+              </TouchableOpacity>
+              {errors.dob ? <Text style={styles.errorHint}>{errors.dob}</Text> : null}
+            </View>
+
+            {showDatePicker && (
+              <DateTimePicker
+                value={formData.dob ? new Date(formData.dob) : new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
+                mode="date"
+                display="default"
+                onChange={handleDateChange}
+                maximumDate={new Date()}
+              />
+            )}
+
             <FormInput label="Permanent Address" icon="home-outline" value={formData.address} onChangeText={(t) => updateField('address', t)} placeholder="Residential address" error={errors.address} />
 
             <View style={styles.row}>

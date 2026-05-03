@@ -56,10 +56,12 @@ const CustomDonutChart = ({ farmers = 0, agriOfficers = 0, admins = 0 }) => {
   }));
 
   const data = [
-    { label: 'Farmers', value: farmers, color: '#4CAF50' },
+    { label: 'Farmers/Users', value: farmers,      color: '#4CAF50' },
     { label: 'Agri Officers', value: agriOfficers, color: '#FFB300' },
-    { label: 'Admins', value: admins, color: '#2E7D32' },
+    { label: 'Admins',        value: admins,        color: '#2E7D32' },
   ];
+
+  const realTotal = farmers + agriOfficers + admins;
 
   return (
     <View style={styles.container}>
@@ -118,14 +120,21 @@ const CustomDonutChart = ({ farmers = 0, agriOfficers = 0, admins = 0 }) => {
         </View>
       </View>
 
-      {/* Legend */}
+      {/* Legend — count + % cards */}
       <View style={styles.legendContainer}>
-        {data.map((item, index) => (
-          <View key={index} style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: item.color }]} />
-            <Text style={styles.legendText}>{item.label}</Text>
-          </View>
-        ))}
+        {data.map((item, index) => {
+          const pct = realTotal > 0 ? ((item.value / realTotal) * 100).toFixed(0) : 0;
+          return (
+            <View key={index} style={styles.legendCard}>
+              <View style={[styles.legendAccent, { backgroundColor: item.color }]} />
+              <View style={styles.legendCardBody}>
+                <Text style={styles.legendCount}>{item.value}</Text>
+                <Text style={styles.legendLabel}>{item.label}</Text>
+                <Text style={[styles.legendPct, { color: item.color }]}>{pct}%</Text>
+              </View>
+            </View>
+          );
+        })}
       </View>
     </View>
   );
@@ -161,9 +170,47 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     flexWrap: 'wrap',
-    marginTop: 20,
+    marginTop: 18,
     width: '100%',
+    gap: 8,
   },
+  legendCard: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    backgroundColor: '#F8FAFB',
+    borderRadius: 10,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#E5EAE8',
+    minWidth: 90,
+  },
+  legendAccent: {
+    width: 5,
+  },
+  legendCardBody: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    alignItems: 'center',
+  },
+  legendCount: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: '#1A2E22',
+    lineHeight: 22,
+  },
+  legendLabel: {
+    fontSize: 10,
+    color: '#6B7280',
+    fontWeight: '600',
+    marginTop: 1,
+    textAlign: 'center',
+  },
+  legendPct: {
+    fontSize: 11,
+    fontWeight: '800',
+    marginTop: 3,
+  },
+  // kept for safety (no longer used but harmless)
   legendItem: {
     flexDirection: 'row',
     alignItems: 'center',

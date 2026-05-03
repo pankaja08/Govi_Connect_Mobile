@@ -1,6 +1,7 @@
 const express = require('express');
 const userController = require('../controllers/userController');
 const authMiddleware = require('../middleware/auth');
+const { getAdminReport, getCropPerformance } = require('../controllers/adminReportController');
 
 const router = express.Router();
 
@@ -17,8 +18,11 @@ router.use(authMiddleware.restrictTo('Admin'));
 router.get('/admin/stats', userController.getDashboardStats);
 router.get('/admin/all', userController.getAllUsers);
 router.get('/admin/pending-experts', userController.getPendingExperts);
+router.get('/admin/full-report', getAdminReport);
+router.get('/admin/crop-performance', getCropPerformance);
 router.patch('/admin/verify-expert/:id', userController.verifyExpert);
 router.post('/admin/create', userController.createUserByAdmin);
+router.post('/admin/test-email', userController.sendTestEmail);
 router.put('/admin/update/:id', userController.updateUserByAdmin);
 router.delete('/admin/delete/:id', userController.deleteUserByAdmin);
 

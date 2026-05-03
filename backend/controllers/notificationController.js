@@ -9,6 +9,8 @@ exports.getNotifications = async (req, res) => {
     const notifications = await Notification.find({ userId: req.user._id })
       .populate('senderId', 'name username')
       .populate('blogId', 'title')
+      .populate('questionId', 'text')
+      .populate('productId', 'name')
       .sort({ createdAt: -1 });
 
     res.status(200).json({

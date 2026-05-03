@@ -13,12 +13,59 @@ exports.getMe = async (req, res) => {
 
 exports.updateMe = async (req, res) => {
   try {
-    // Only allow updating specific fields
-    const { name, location, contactInfo, nic, dob, email, province, district } = req.body;
+    const { name, email, nic, dob, contactInfo, province, district, location } = req.body;
     
+    // 1. Basic format validations
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^0\d{9}$/;
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+
+    if (email && !emailRegex.test(email)) {
+      return res.status(400).json({ status: 'fail', message: 'Invalid email format.' });
+    }
+    if (contactInfo && !phoneRegex.test(contactInfo)) {
+      return res.status(400).json({ status: 'fail', message: 'Invalid contact number (10 digits starting with 0).' });
+    }
+    if (nic && !nicRegex.test(nic)) {
+      return res.status(400).json({ status: 'fail', message: 'Invalid NIC format.' });
+    }
+
+    // 2. Age validation (16+)
+    if (dob) {
+      const dobDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - dobDate.getFullYear();
+      const m = today.getMonth() - dobDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) age--;
+      if (age < 16) return res.status(400).json({ status: 'fail', message: 'You must be at least 16 years old.' });
+    }
+
+    // 3. Uniqueness check if Email or NIC changed
+    const currentUser = await User.findById(req.user.id);
+    const checks = [];
+    if (email && email.toLowerCase() !== currentUser.email.toLowerCase()) {
+      checks.push({ email: email.toLowerCase() });
+    }
+    if (nic && nic.toUpperCase() !== currentUser.nic?.toUpperCase()) {
+      checks.push({ nic: nic.toUpperCase() });
+    }
+
+    if (checks.length > 0) {
+      const existing = await User.findOne({ $or: checks });
+      if (existing) {
+        let field = existing.email === email.toLowerCase() ? 'Email' : 'NIC';
+        return res.status(400).json({ status: 'fail', message: `${field} is already in use by another user.` });
+      }
+    }
+
     const updatedUser = await User.findByIdAndUpdate(
       req.user.id,
-      { name, location, contactInfo, nic, dob, email, province, district },
+      { 
+        name, 
+        email: email ? email.toLowerCase() : undefined, 
+        nic: nic ? nic.toUpperCase() : undefined, 
+        dob, contactInfo, province, district, location 
+      },
       { new: true, runValidators: true }
     );
 
@@ -77,6 +124,7 @@ exports.getDashboardStats = async (req, res) => {
 
     // Total = farmers + active agri officers + pending experts (excludes Admins)
     const totalUsers = farmers + agriOfficers + pendingExperts;
+    const pendingProducts = await require('../models/Product').countDocuments({ approvalStatus: 'pending' });
 
     // Get geographical distribution of Farmers
     const geographicStats = await User.aggregate([
@@ -92,6 +140,7 @@ exports.getDashboardStats = async (req, res) => {
         farmers,
         agriOfficers,
         pendingExperts,
+        pendingProducts,
         geographicStats
       }
     });
@@ -121,33 +170,62 @@ exports.getPendingExperts = async (req, res) => {
 exports.verifyExpert = async (req, res) => {
   try {
     const { action, reason } = req.body; // action: 'approve' or 'reject'
-    const expert = await User.findById(req.params.id);
+    
+    // Explicitly find the user and ensure email/name are available
+    const expert = await User.findById(req.params.id).select('+email +name');
 
     if (!expert || expert.role !== 'Expert') {
       return res.status(404).json({ status: 'fail', message: 'No pending expert found with that ID' });
     }
+
+    console.log(`\n--- Expert Verification: ${expert.email} ---`);
+    console.log(`Action: ${action}`);
 
     if (action === 'approve') {
       expert.status = 'Active';
       expert.rejectionReason = '';
       await expert.save();
       
+      console.log(`✅ [Admin] Expert status set to Active. Sending approval email...`);
       // Send Approval Email
-      await emailService.sendApprovalEmail(expert.email, expert.name);
+      try {
+        await emailService.sendApprovalEmail(expert.email, expert.name);
+      } catch (emailErr) {
+        console.error(`⚠️ [Admin] Email service failed:`, emailErr.message);
+      }
     } else if (action === 'reject') {
       expert.status = 'Rejected';
       expert.rejectionReason = reason || 'Your credentials could not be verified.';
       await expert.save();
       
+      console.log(`✅ [Admin] Expert status set to Rejected. Sending rejection email...`);
       // Send Rejection Email
-      await emailService.sendRejectionEmail(expert.email, expert.name, expert.rejectionReason);
+      try {
+        await emailService.sendRejectionEmail(expert.email, expert.name, expert.rejectionReason);
+      } catch (emailErr) {
+        console.error(`⚠️ [Admin] Email service failed:`, emailErr.message);
+      }
     } else {
       return res.status(400).json({ status: 'fail', message: 'Invalid action. Use "approve" or "reject".' });
     }
 
+    console.log(`--- Verification Completed ---\n`);
     res.status(200).json({ status: 'success', data: { user: expert } });
   } catch (err) {
+    console.error('❌ [Admin] Expert verification error:', err.message);
     res.status(400).json({ status: 'fail', message: err.message });
+  }
+};
+
+exports.sendTestEmail = async (req, res) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ message: 'Target email is required' });
+
+    const result = await emailService.sendTestEmail(email);
+    res.status(200).json({ status: 'success', message: 'Test email sent!', data: result });
+  } catch (err) {
+    res.status(500).json({ status: 'error', message: 'Email test failed', error: err.message });
   }
 };
 
@@ -182,22 +260,58 @@ exports.createUserByAdmin = async (req, res) => {
   try {
     const { 
       name, email, username, password, role, 
-      district, contactInfo, nic, dob, address, province 
+      district, contactInfo, nic, dob, address, province,
+      expertRegNo, areaOfExpertise, jobPosition, assignedArea
     } = req.body;
+
+    // Check for required fields
+    if (!name || !email || !username || !password || !nic || !dob || !contactInfo || !district || !province || !address) {
+      return res.status(400).json({ status: 'fail', message: 'All basic fields are required.' });
+    }
+
+    // Expert fields validation
+    if (role === 'Expert') {
+      if (!expertRegNo || !areaOfExpertise || !jobPosition || !assignedArea) {
+        return res.status(400).json({ status: 'fail', message: 'All expert credentials are required for Expert role.' });
+      }
+    }
+
+    // NIC validation
+    const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+    if (!nicRegex.test(nic)) {
+      return res.status(400).json({ status: 'fail', message: 'Invalid NIC format.' });
+    }
+
+    // Phone validation
+    const phoneRegex = /^0\d{9}$/;
+    if (!phoneRegex.test(contactInfo)) {
+      return res.status(400).json({ status: 'fail', message: 'Invalid contact number (10 digits starting with 0).' });
+    }
+
+    // Age validation (16+)
+    const dobDate = new Date(dob);
+    const today = new Date();
+    let age = today.getFullYear() - dobDate.getFullYear();
+    const m = today.getMonth() - dobDate.getMonth();
+    if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) age--;
+    if (age < 16) return res.status(400).json({ status: 'fail', message: 'User must be at least 16 years old.' });
+
+    const existing = await User.findOne({ 
+      $or: [{ email: email.toLowerCase() }, { username }, { nic: nic.toUpperCase() }] 
+    });
+    if (existing) {
+      let field = 'User';
+      if (existing.email === email.toLowerCase()) field = 'Email';
+      else if (existing.username === username) field = 'Username';
+      else if (existing.nic === nic.toUpperCase()) field = 'NIC';
+      return res.status(400).json({ status: 'fail', message: `${field} already in use.` });
+    }
     
     const newUser = await User.create({
-      name,
-      email,
-      username,
-      password,
-      role,
-      district,
-      contactInfo,
-      nic,
-      dob,
-      address,
-      province,
-      status: 'Active' // Admin created users are active by default
+      name, email, username, password, role,
+      district, contactInfo, nic, dob, address, province,
+      expertRegNo, areaOfExpertise, jobPosition, assignedArea,
+      status: role === 'Expert' ? 'Pending' : 'Active'
     });
 
     res.status(201).json({ status: 'success', data: { user: newUser } });
@@ -208,6 +322,46 @@ exports.createUserByAdmin = async (req, res) => {
 
 exports.updateUserByAdmin = async (req, res) => {
   try {
+    const { email, nic, dob, contactInfo, role } = req.body;
+
+    if (req.body.name === '' || email === '' || nic === '' || dob === '' || contactInfo === '') {
+      return res.status(400).json({ status: 'fail', message: 'Fields cannot be empty.' });
+    }
+
+    // Expert fields validation if role is being changed to Expert or is already Expert
+    if (role === 'Expert') {
+      const { expertRegNo, areaOfExpertise, jobPosition, assignedArea } = req.body;
+      if (expertRegNo === '' || areaOfExpertise === '' || jobPosition === '' || assignedArea === '') {
+        return res.status(400).json({ status: 'fail', message: 'Expert fields cannot be empty.' });
+      }
+    }
+
+    if (nic) {
+      const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+      if (!nicRegex.test(nic)) return res.status(400).json({ status: 'fail', message: 'Invalid NIC format.' });
+      const existingNic = await User.findOne({ nic: nic.toUpperCase(), _id: { $ne: req.params.id } });
+      if (existingNic) return res.status(400).json({ status: 'fail', message: 'NIC already in use.' });
+    }
+
+    if (contactInfo) {
+      const phoneRegex = /^0\d{9}$/;
+      if (!phoneRegex.test(contactInfo)) return res.status(400).json({ status: 'fail', message: 'Invalid phone format.' });
+    }
+
+    if (dob) {
+      const dobDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - dobDate.getFullYear();
+      const m = today.getMonth() - dobDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) age--;
+      if (age < 16) return res.status(400).json({ status: 'fail', message: 'User must be at least 16 years old.' });
+    }
+
+    if (email) {
+      const existingEmail = await User.findOne({ email: email.toLowerCase(), _id: { $ne: req.params.id } });
+      if (existingEmail) return res.status(400).json({ status: 'fail', message: 'Email already in use.' });
+    }
+
     if (req.body.password) {
       req.body.password = await bcrypt.hash(req.body.password, 12);
     }
@@ -217,9 +371,7 @@ exports.updateUserByAdmin = async (req, res) => {
       runValidators: true
     });
 
-    if (!updatedUser) {
-      return res.status(404).json({ status: 'fail', message: 'No user found with that ID' });
-    }
+    if (!updatedUser) return res.status(404).json({ status: 'fail', message: 'No user found.' });
 
     res.status(200).json({ status: 'success', data: { user: updatedUser } });
   } catch (err) {

@@ -31,7 +31,13 @@ const userSchema = new mongoose.Schema({
     enum: ['User', 'Expert', 'Admin'],
     default: 'User'
   },
-  nic: { type: String, default: '' },
+  nic: { 
+    type: String, 
+    required: [true, 'Please provide your NIC'],
+    unique: true,
+    uppercase: true,
+    trim: true
+  },
   dob: { type: String, default: '' },
   address: { type: String, default: '' },
   province: { type: String, default: '' },

@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, FontAwesome5, MaterialCommunityIcons, MaterialIcons } from '@expo/vector-icons';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import apiClient from '../api/client';
 
 const { width } = Dimensions.get('window');
@@ -172,6 +173,7 @@ const AdminUsersScreen = ({ navigation }) => {
   const [isModalVisible, setModalVisible] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -186,7 +188,11 @@ const AdminUsersScreen = ({ navigation }) => {
     dob: '',
     address: '',
     password: '',
-    confirmPassword: ''
+    confirmPassword: '',
+    expertRegNo: '',
+    areaOfExpertise: '',
+    jobPosition: '',
+    assignedArea: ''
   });
 
   useEffect(() => {
@@ -208,9 +214,47 @@ const AdminUsersScreen = ({ navigation }) => {
 
   const handleCreateUser = async () => {
     try {
-      // Basic Validation
-      if (!formData.name || !formData.email || !formData.username || (!isEditMode && !formData.password)) {
-        Alert.alert('Error', 'Please fill in all required fields marked with *');
+      const { name, email, username, password, nic, dob, contactInfo, district, province, address } = formData;
+
+      // Basic Required Fields Validation
+      if (!name || !email || !username || (!isEditMode && !password) || !nic || !dob || !contactInfo || !district || !province || !address) {
+        Alert.alert('Error', 'Please fill in all required fields');
+        return;
+      }
+
+      // Email validation
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        Alert.alert('Error', 'Please enter a valid email address');
+        return;
+      }
+
+      // NIC validation
+      const nicRegex = /^([0-9]{9}[vVxX]|[0-9]{12})$/;
+      if (!nicRegex.test(nic)) {
+        Alert.alert('Error', 'Invalid NIC format (e.g. 123456789V or 12 digits)');
+        return;
+      }
+
+      // Phone validation
+      const phoneRegex = /^0\d{9}$/;
+      if (!phoneRegex.test(contactInfo)) {
+        Alert.alert('Error', 'Contact number must start with 0 and be exactly 10 digits');
+        return;
+      }
+
+      // Age validation (16+)
+      const dobDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - dobDate.getFullYear();
+      const m = today.getMonth() - dobDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < dobDate.getDate())) age--;
+
+      if (isNaN(dobDate.getTime()) || !/^\d{4}-\d{2}-\d{2}$/.test(dob)) {
+        Alert.alert('Error', 'DOB must be in YYYY-MM-DD format');
+        return;
+      } else if (age < 16) {
+        Alert.alert('Error', 'User must be at least 16 years old');
         return;
       }
 
@@ -230,16 +274,16 @@ const AdminUsersScreen = ({ navigation }) => {
       if (isEditMode) {
         await apiClient.put(`/users/admin/update/${selectedUser._id}`, payload);
         if (Platform.OS === 'web') {
-           window.alert('User updated successfully');
+          window.alert('User updated successfully');
         } else {
-           Alert.alert('Success', 'User updated successfully');
+          Alert.alert('Success', 'User updated successfully');
         }
       } else {
         await apiClient.post('/users/admin/create', payload);
         if (Platform.OS === 'web') {
-           window.alert('User created successfully');
+          window.alert('User created successfully');
         } else {
-           Alert.alert('Success', 'User created successfully');
+          Alert.alert('Success', 'User created successfully');
         }
       }
 
@@ -258,9 +302,9 @@ const AdminUsersScreen = ({ navigation }) => {
     } catch (error) {
       const errorMsg = error.response?.data?.message || 'Failed to delete user';
       if (Platform.OS === 'web') {
-         window.alert('Error: ' + errorMsg);
+        window.alert('Error: ' + errorMsg);
       } else {
-         Alert.alert('Error', errorMsg);
+        Alert.alert('Error', errorMsg);
       }
     }
   };
@@ -300,7 +344,11 @@ const AdminUsersScreen = ({ navigation }) => {
       dob: user.dob || '',
       address: user.address || '',
       password: '', // Keep empty unless changing
-      confirmPassword: ''
+      confirmPassword: '',
+      expertRegNo: user.expertRegNo || '',
+      areaOfExpertise: user.areaOfExpertise || '',
+      jobPosition: user.jobPosition || '',
+      assignedArea: user.assignedArea || ''
     });
     setIsEditMode(true);
     setModalVisible(true);
@@ -319,10 +367,24 @@ const AdminUsersScreen = ({ navigation }) => {
       dob: '',
       address: '',
       password: '',
-      confirmPassword: ''
+      confirmPassword: '',
+      expertRegNo: '',
+      areaOfExpertise: '',
+      jobPosition: '',
+      assignedArea: ''
     });
     setIsEditMode(false);
     setSelectedUser(null);
+  };
+
+  const handleDateChange = (event, selectedDate) => {
+    setShowDatePicker(false);
+    if (selectedDate) {
+      const year = selectedDate.getFullYear();
+      const month = String(selectedDate.getMonth() + 1).padStart(2, '0');
+      const day = String(selectedDate.getDate()).padStart(2, '0');
+      setFormData({ ...formData, dob: `${year}-${month}-${day}` });
+    }
   };
 
   const renderUserTable = (title, icon, roleType, color) => {
@@ -350,71 +412,71 @@ const AdminUsersScreen = ({ navigation }) => {
                 <Text style={styles.columnHeaderActions}>ACTIONS</Text>
               </View>
 
-            {/* Rows */}
-            {filteredUsers.length > 0 ? (
-              filteredUsers.map((user, index) => (
-                <View key={user._id} style={[styles.tableRow, index === filteredUsers.length - 1 && styles.lastRow]}>
-                  <View style={styles.nameCell}>
-                    <View>
-                      <Text style={styles.userNameText}>{user.name}</Text>
-                      <Text style={styles.userSubText}>{user.username}</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.emailCell} numberOfLines={1} ellipsizeMode="tail">{user.email}</Text>
-                  <Text style={styles.cellText}>{user.contactInfo || 'N/A'}</Text>
-                  <Text style={styles.cellText}>{user.district || 'N/A'}</Text>
-                  <View style={styles.statusCell}>
-                    <View style={[
-                      styles.statusBadge, 
-                      user.status === 'Pending' ? { backgroundColor: '#FFF7ED' } : 
-                      user.status === 'Rejected' ? { backgroundColor: '#FEF2F2' } : 
-                      { backgroundColor: '#F0FDF4' }
-                    ]}>
-                      <View style={[
-                        styles.statusDot, 
-                        user.status === 'Pending' ? { backgroundColor: '#F97316' } : 
-                        user.status === 'Rejected' ? { backgroundColor: '#EF4444' } : 
-                        { backgroundColor: '#22C55E' }
-                      ]} />
-                      <Text style={[
-                        styles.statusText,
-                        user.status === 'Pending' ? { color: '#C2410C' } : 
-                        user.status === 'Rejected' ? { color: '#B91C1C' } : 
-                        { color: '#15803D' }
-                      ]}>{user.status || 'Active'}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.actionsCell}>
-                    <TouchableOpacity 
-                      onPress={() => openEditModal(user)}
-                      style={styles.actionBtn}
-                    >
-                      <View style={[styles.actionItem, styles.editItem]}>
-                        <Ionicons name="pencil" size={16} color="#F59E0B" />
-                        <Text style={styles.editText}>Edit</Text>
+              {/* Rows */}
+              {filteredUsers.length > 0 ? (
+                filteredUsers.map((user, index) => (
+                  <View key={user._id} style={[styles.tableRow, index === filteredUsers.length - 1 && styles.lastRow]}>
+                    <View style={styles.nameCell}>
+                      <View>
+                        <Text style={styles.userNameText}>{user.name}</Text>
+                        <Text style={styles.userSubText}>{user.username}</Text>
                       </View>
-                    </TouchableOpacity>
-                    {roleType !== 'Admin' && (
-                      <TouchableOpacity 
-                        onPress={() => handleDeleteUser(user._id, user.name)}
+                    </View>
+                    <Text style={styles.emailCell} numberOfLines={1} ellipsizeMode="tail">{user.email}</Text>
+                    <Text style={styles.cellText}>{user.contactInfo || 'N/A'}</Text>
+                    <Text style={styles.cellText}>{user.district || 'N/A'}</Text>
+                    <View style={styles.statusCell}>
+                      <View style={[
+                        styles.statusBadge,
+                        user.status === 'Pending' ? { backgroundColor: '#FFF7ED' } :
+                          user.status === 'Rejected' ? { backgroundColor: '#FEF2F2' } :
+                            { backgroundColor: '#F0FDF4' }
+                      ]}>
+                        <View style={[
+                          styles.statusDot,
+                          user.status === 'Pending' ? { backgroundColor: '#F97316' } :
+                            user.status === 'Rejected' ? { backgroundColor: '#EF4444' } :
+                              { backgroundColor: '#22C55E' }
+                        ]} />
+                        <Text style={[
+                          styles.statusText,
+                          user.status === 'Pending' ? { color: '#C2410C' } :
+                            user.status === 'Rejected' ? { color: '#B91C1C' } :
+                              { color: '#15803D' }
+                        ]}>{user.status || 'Active'}</Text>
+                      </View>
+                    </View>
+                    <View style={styles.actionsCell}>
+                      <TouchableOpacity
+                        onPress={() => openEditModal(user)}
                         style={styles.actionBtn}
                       >
-                        <View style={[styles.actionItem, styles.deleteItem]}>
-                          <Ionicons name="trash" size={16} color="#EF4444" />
-                          <Text style={styles.deleteText}>Delete</Text>
+                        <View style={[styles.actionItem, styles.editItem]}>
+                          <Ionicons name="pencil" size={16} color="#F59E0B" />
+                          <Text style={styles.editText}>Edit</Text>
                         </View>
                       </TouchableOpacity>
-                    )}
+                      {roleType !== 'Admin' && (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteUser(user._id, user.name)}
+                          style={styles.actionBtn}
+                        >
+                          <View style={[styles.actionItem, styles.deleteItem]}>
+                            <Ionicons name="trash" size={16} color="#EF4444" />
+                            <Text style={styles.deleteText}>Delete</Text>
+                          </View>
+                        </TouchableOpacity>
+                      )}
+                    </View>
                   </View>
+                ))
+              ) : (
+                <View style={styles.emptyRow}>
+                  <Text style={styles.emptyText}>No users found in this category.</Text>
                 </View>
-              ))
-            ) : (
-              <View style={styles.emptyRow}>
-                <Text style={styles.emptyText}>No users found in this category.</Text>
-              </View>
-            )}
-          </View>
-        </ScrollView>
+              )}
+            </View>
+          </ScrollView>
         </View>
       </View>
     );
@@ -449,7 +511,12 @@ const AdminUsersScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        scrollEventThrottle={16}
+        keyboardDismissMode="on-drag"
+        keyboardShouldPersistTaps="handled"
+      >
         {renderUserTable('Administrators', 'shield-checkmark', 'Admin', '#DC2626')}
         {renderUserTable('Agri Officers / Experts', 'leaf', 'Expert', '#2563EB')}
         {renderUserTable('Farmers / Users', 'person', 'User', '#115C39')}
@@ -464,8 +531,9 @@ const AdminUsersScreen = ({ navigation }) => {
         onRequestClose={() => setModalVisible(false)}
       >
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
           style={styles.modalOverlay}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 40}
         >
           <View style={styles.modalContent}>
             {/* Modal Header */}
@@ -482,12 +550,14 @@ const AdminUsersScreen = ({ navigation }) => {
               contentContainerStyle={styles.modalBodyContent}
               showsVerticalScrollIndicator={true}
               keyboardShouldPersistTaps="handled"
+              scrollEventThrottle={16}
+              keyboardDismissMode="on-drag"
             >
               {/* Section 1: Basic Information */}
               <View style={styles.formSection}>
                 <View style={styles.sectionHeadingRow}>
-                   <View style={styles.headingAccent} />
-                   <Text style={styles.sectionHeading}>Basic Information</Text>
+                  <View style={styles.headingAccent} />
+                  <Text style={styles.sectionHeading}>Basic Information</Text>
                 </View>
 
                 <View style={styles.inputWrapper}>
@@ -547,16 +617,26 @@ const AdminUsersScreen = ({ navigation }) => {
 
                 <View style={styles.inputWrapper}>
                   <Text style={styles.label}>Date of Birth <Text style={styles.required}>*</Text></Text>
-                  <View style={styles.inputIconGroup}>
+                  <TouchableOpacity
+                    style={styles.inputIconGroup}
+                    onPress={() => setShowDatePicker(true)}
+                  >
                     <Ionicons name="calendar-outline" size={20} color="#115C39" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.flexInput}
-                      placeholder="YYYY-MM-DD"
-                      value={formData.dob}
-                      onChangeText={(val) => setFormData({ ...formData, dob: val })}
-                    />
-                  </View>
+                    <Text style={[styles.flexInput, !formData.dob && { color: '#9CA3AF' }]}>
+                      {formData.dob || "YYYY-MM-DD"}
+                    </Text>
+                  </TouchableOpacity>
                 </View>
+
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={formData.dob ? new Date(formData.dob) : new Date(new Date().setFullYear(new Date().getFullYear() - 16))}
+                    mode="date"
+                    display="default"
+                    onChange={handleDateChange}
+                    maximumDate={new Date()}
+                  />
+                )}
 
                 <View style={styles.inputWrapper}>
                   <Text style={styles.label}>Permanent Address <Text style={styles.required}>*</Text></Text>
@@ -580,7 +660,6 @@ const AdminUsersScreen = ({ navigation }) => {
                   placeholder="Select Province"
                   icon="map-outline"
                   onSelect={(val) => {
-                    // When province changes, reset district if it no longer belongs
                     const validDistricts = SRI_LANKA_DATA[val] || [];
                     const keepDistrict = validDistricts.includes(formData.district)
                       ? formData.district
@@ -589,7 +668,7 @@ const AdminUsersScreen = ({ navigation }) => {
                   }}
                 />
 
-                {/* District Dropdown — filtered by selected province */}
+                {/* District Dropdown */}
                 <DropdownPicker
                   label="District"
                   required
@@ -607,74 +686,133 @@ const AdminUsersScreen = ({ navigation }) => {
                   icon="location-outline"
                   onSelect={(val) => setFormData({ ...formData, district: val })}
                 />
-
-                <View style={styles.inputWrapper}>
-                  <Text style={styles.label}>Target Role</Text>
-                  <View style={styles.roleSelector}>
-                    {['Admin', 'Expert', 'User'].map((r) => (
-                      <TouchableOpacity
-                        key={r}
-                        style={[styles.roleOption, formData.role === r && styles.roleActive]}
-                        onPress={() => setFormData({ ...formData, role: r })}
-                      >
-                        <Text style={[styles.roleOptionText, formData.role === r && styles.roleActiveText]}>{r}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </View>
-                </View>
               </View>
 
               {/* Section 2: Account Credentials */}
               <View style={styles.formSection}>
                 <View style={styles.sectionHeadingRow}>
-                   <View style={styles.headingAccent} />
-                   <Text style={styles.sectionHeading}>Account Credentials</Text>
+                  <View style={styles.headingAccent} />
+                  <Text style={styles.sectionHeading}>Account Credentials</Text>
                 </View>
 
-                <View style={styles.inputWrapper}>
-                  <Text style={styles.label}>Username <Text style={styles.required}>*</Text></Text>
-                  <View style={styles.inputIconGroup}>
-                    <MaterialCommunityIcons name="at" size={20} color="#115C39" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.flexInput}
-                      placeholder="username"
-                      autoCapitalize="none"
-                      value={formData.username}
-                      onChangeText={(val) => setFormData({ ...formData, username: val })}
-                    />
+                <DropdownPicker
+                  label="User Role"
+                  required
+                  value={formData.role}
+                  options={['User', 'Expert', 'Admin']}
+                  placeholder="Select Role"
+                  icon="shield-outline"
+                  onSelect={(val) => setFormData({ ...formData, role: val })}
+                />
+
+                {!isEditMode && (
+                  <>
+                    <View style={styles.inputWrapper}>
+                      <Text style={styles.label}>Username <Text style={styles.required}>*</Text></Text>
+                      <View style={styles.inputIconGroup}>
+                        <Ionicons name="at-outline" size={20} color="#115C39" style={styles.inputIcon} />
+                        <TextInput
+                          style={styles.flexInput}
+                          placeholder="Choose a username"
+                          autoCapitalize="none"
+                          value={formData.username}
+                          onChangeText={(val) => setFormData({ ...formData, username: val })}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.inputWrapper}>
+                      <Text style={styles.label}>Password <Text style={styles.required}>*</Text></Text>
+                      <View style={styles.inputIconGroup}>
+                        <Ionicons name="lock-closed-outline" size={20} color="#115C39" style={styles.inputIcon} />
+                        <TextInput
+                          style={styles.flexInput}
+                          placeholder="Min. 6 characters"
+                          secureTextEntry={true}
+                          value={formData.password}
+                          onChangeText={(val) => setFormData({ ...formData, password: val })}
+                        />
+                      </View>
+                    </View>
+
+                    <View style={styles.inputWrapper}>
+                      <Text style={styles.label}>Confirm Password <Text style={styles.required}>*</Text></Text>
+                      <View style={styles.inputIconGroup}>
+                        <Ionicons name="shield-checkmark-outline" size={20} color="#115C39" style={styles.inputIcon} />
+                        <TextInput
+                          style={styles.flexInput}
+                          placeholder="Repeat password"
+                          secureTextEntry={true}
+                          value={formData.confirmPassword}
+                          onChangeText={(val) => setFormData({ ...formData, confirmPassword: val })}
+                        />
+                      </View>
+                    </View>
+                  </>
+                )}
+              </View>
+
+              {/* Section 3: Expert Credentials (Conditional) */}
+              {formData.role === 'Expert' && (
+                <View style={styles.formSection}>
+                  <View style={styles.sectionHeadingRow}>
+                    <View style={styles.headingAccent} />
+                    <Text style={styles.sectionHeading}>Expert Credentials</Text>
                   </View>
-                </View>
 
-                <View style={styles.inputWrapper}>
-                  <Text style={styles.label}>{isEditMode ? 'New Password' : 'Password'} <Text style={styles.required}>*</Text></Text>
-                  <View style={styles.inputIconGroup}>
-                    <Ionicons name="lock-closed-outline" size={20} color="#115C39" style={styles.inputIcon} />
-                    <TextInput
-                      style={styles.flexInput}
-                      placeholder={isEditMode ? "Leave blank to keep current" : "Enter password"}
-                      secureTextEntry
-                      value={formData.password}
-                      onChangeText={(val) => setFormData({ ...formData, password: val })}
-                    />
-                  </View>
-                </View>
-
-                {(!isEditMode || formData.password.length > 0) && (
                   <View style={styles.inputWrapper}>
-                    <Text style={styles.label}>Confirm Password <Text style={styles.required}>*</Text></Text>
+                    <Text style={styles.label}>Registration Number <Text style={styles.required}>*</Text></Text>
                     <View style={styles.inputIconGroup}>
-                      <MaterialIcons name="verified-user" size={20} color="#115C39" style={styles.inputIcon} />
+                      <Ionicons name="ribbon-outline" size={20} color="#115C39" style={styles.inputIcon} />
                       <TextInput
                         style={styles.flexInput}
-                        placeholder="Repeat password"
-                        secureTextEntry
-                        value={formData.confirmPassword}
-                        onChangeText={(val) => setFormData({ ...formData, confirmPassword: val })}
+                        placeholder="Official Reg No."
+                        value={formData.expertRegNo}
+                        onChangeText={(val) => setFormData({ ...formData, expertRegNo: val })}
                       />
                     </View>
                   </View>
-                )}
-              </View>
+
+                  <View style={styles.inputWrapper}>
+                    <Text style={styles.label}>Area of Expertise <Text style={styles.required}>*</Text></Text>
+                    <View style={styles.inputIconGroup}>
+                      <Ionicons name="flask-outline" size={20} color="#115C39" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.flexInput}
+                        placeholder="e.g. Plant Pathology"
+                        value={formData.areaOfExpertise}
+                        onChangeText={(val) => setFormData({ ...formData, areaOfExpertise: val })}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.inputWrapper}>
+                    <Text style={styles.label}>Job Position <Text style={styles.required}>*</Text></Text>
+                    <View style={styles.inputIconGroup}>
+                      <Ionicons name="briefcase-outline" size={20} color="#115C39" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.flexInput}
+                        placeholder="e.g. Agronomist"
+                        value={formData.jobPosition}
+                        onChangeText={(val) => setFormData({ ...formData, jobPosition: val })}
+                      />
+                    </View>
+                  </View>
+
+                  <View style={styles.inputWrapper}>
+                    <Text style={styles.label}>Assigned Area <Text style={styles.required}>*</Text></Text>
+                    <View style={styles.inputIconGroup}>
+                      <Ionicons name="map-outline" size={20} color="#115C39" style={styles.inputIcon} />
+                      <TextInput
+                        style={styles.flexInput}
+                        placeholder="Covered region"
+                        value={formData.assignedArea}
+                        onChangeText={(val) => setFormData({ ...formData, assignedArea: val })}
+                      />
+                    </View>
+                  </View>
+                </View>
+              )}
 
               {/* Bottom padding so last field isn't hidden behind submit button */}
               <View style={{ height: 16 }} />

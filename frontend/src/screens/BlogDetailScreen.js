@@ -263,8 +263,9 @@ const CommentsModal = ({ visible, blogId, onClose, isRegistered, isExpertView, b
         <TouchableOpacity style={styles.dismissArea} activeOpacity={1} onPress={onClose} />
 
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'padding'}
           style={{ width: '100%' }}
+          keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
         >
           <Animated.View
             style={[styles.modalSheet, { transform: [{ translateY: slideAnim }] }]}

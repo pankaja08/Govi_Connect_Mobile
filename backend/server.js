@@ -14,12 +14,17 @@ const userRoutes = require('./routes/userRoutes');
 const activityRoutes = require('./routes/activityRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const forumRoutes = require('./routes/forumRoutes');
+const farmTrackerRoutes = require('./routes/farmTrackerRoutes');
+const cropAdvisoryRoutes = require('./routes/cropAdvisoryRoutes');
+const productRoutes      = require('./routes/productRoutes');
 
 const app = express();
 
 // Middlewares
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
 app.use('/api/auth', authRoutes);
@@ -27,6 +32,10 @@ app.use('/api/users', userRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/forum', forumRoutes);
+app.use('/api/farm/crops', farmTrackerRoutes);
+app.use('/api/crop-advisory', cropAdvisoryRoutes);
+app.use('/api/products', productRoutes);
 
 // Database connection
 const DB = process.env.MONGODB_URI || 'mongodb://localhost:27017/gosconnect';

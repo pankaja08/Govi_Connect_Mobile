@@ -12,7 +12,8 @@ import {
   Dimensions,
   Image,
   ActivityIndicator,
-  KeyboardAvoidingView
+  KeyboardAvoidingView,
+  Alert
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -81,14 +82,13 @@ const SearchablePicker = ({ label, value, options, onSelect, placeholder }) => {
 const ExpertDashboardScreen = ({ navigation, route }) => {
   const [user, setUser] = useState(null);
   const editData = route?.params?.editData;
-
   const [formData, setFormData] = useState({
     title: '',
     content: '',
     location: 'All Island',
     season: 'Any Season',
     cropType: 'Any Crop',
-    farmingMethod: 'Any Method'
+    farmingMethod: 'Any Method',
   });
 
   const [coverImage, setCoverImage] = useState(null);
@@ -122,11 +122,11 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
         farmingMethod: editData.farmingMethod || 'Any Method'
       });
       setCoverImage(editData.imageUrl);
-      
+
       // Calculate length assuming stripped HTML
       const stripped = (editData.content || '').replace(/<[^>]+>/g, '');
       setContentLength(stripped.length);
-      
+
       // Delay to ensure the richText ref is ready to accept content
       setTimeout(() => {
         richText.current?.setContentHTML(editData.content || '');
@@ -153,7 +153,9 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
     }
   };
 
-  const updateField = (field, value) => setFormData(prev => ({ ...prev, [field]: value }));
+  const updateField = (field, value) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
 
   const pickImage = async () => {
     let result = await ImagePicker.launchImageLibraryAsync({
@@ -170,7 +172,6 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
 
   const uploadImageAsync = async (uri) => {
     try {
-      // TODO: Replace with your actual Cloudinary details
       const CLOUD_NAME = "dkwyk8nih";
       const UPLOAD_PRESET = "govi_connect_blog";
 
@@ -183,6 +184,7 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
         name: 'upload.jpg',
       });
       data.append('upload_preset', UPLOAD_PRESET);
+      data.append('folder', 'blogs');
 
       const response = await fetch(apiUrl, {
         method: 'POST',
@@ -229,15 +231,15 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
       if (editData) {
         // Update existing blog
         await apiClient.put(`/blogs/${editData._id}`, payload);
-        alert('Blog updated successfully!');
-        
+        Alert.alert('Updated', 'Blog updated successfully!');
+
         // Reset params and go back to View Past Blogs
         navigation.setParams({ editData: null });
         navigation.navigate('MyBlogs');
       } else {
         // Create new blog
         await apiClient.post('/blogs', payload);
-        alert('Blog published successfully!');
+        Alert.alert('Published', 'Blog published successfully!');
 
         setFormData({
           title: '', content: '', location: 'All Island', season: 'Any Season', cropType: 'Any Crop', farmingMethod: 'Any Method'
@@ -247,7 +249,7 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
         setContentLength(0);
       }
     } catch (err) {
-      alert(err.response?.data?.message || 'Error publishing blog. Please check your connection.');
+      Alert.alert('Error', err.response?.data?.message || 'Error publishing blog. Please check your connection.');
       console.error(err);
     } finally {
       setSubmitting(false);
@@ -276,7 +278,7 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
               end={{ x: 1, y: 1 }}
             >
               <Text style={styles.welcomeSubtitle}>WELCOME BACK</Text>
-              <Text style={styles.welcomeTitle}>Hello, {user?.name || 'Expert'}!</Text>
+              <Text style={styles.welcomeName}>Hello, {user?.name || 'Expert'}!</Text>
               <Text style={styles.welcomeText}>
                 Share your agricultural expertise with Sri Lankan farmers through insightful blog posts and direct forum discussions.
               </Text>
@@ -389,8 +391,8 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
               ) : (
                 <>
                   <Text style={styles.submitBtnText}>
-                  {editData ? 'Save Changes' : 'Publish Blog'}
-                </Text>
+                    {editData ? 'Save Changes' : 'Publish Blog'}
+                  </Text>
                   <Ionicons name="arrow-forward" size={18} color="#fff" style={{ marginLeft: 8 }} />
                 </>
               )}
@@ -407,7 +409,7 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1, backgroundColor: '#f2f7f4' },
-  scrollContent: {},
+  scrollContent: { flexGrow: 1 },
 
   headerContainer: {
     backgroundColor: '#1F9A4E',
@@ -431,12 +433,11 @@ const styles = StyleSheet.create({
     marginRight: 15,
   },
   topNavTitle: {
-    color: '#F5A623', // Yellow brand accent
+    color: '#F5A623',
     fontSize: 14,
     fontWeight: 'bold',
     letterSpacing: 1
   },
-
   bannerCard: {
     marginHorizontal: 15,
     padding: 25,
@@ -452,7 +453,7 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginBottom: 5
   },
-  welcomeTitle: {
+  welcomeName: {
     color: '#ffffff',
     fontSize: 26,
     fontWeight: 'bold',
@@ -471,11 +472,10 @@ const styles = StyleSheet.create({
     bottom: -20,
     transform: [{ rotate: '-15deg' }]
   },
-
   formCard: {
     backgroundColor: '#ffffff',
     marginHorizontal: 15,
-    marginTop: -15, // Overlaps the green header slightly
+    marginTop: -15,
     borderRadius: 15,
     padding: 25,
     shadowColor: '#000',
@@ -501,7 +501,6 @@ const styles = StyleSheet.create({
     color: '#666',
     lineHeight: 18
   },
-
   row: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 },
   inputGroup: { marginBottom: 20 },
   label: {
@@ -519,7 +518,6 @@ const styles = StyleSheet.create({
     color: '#333',
     backgroundColor: '#fbfcfb'
   },
-
   pickerButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -532,55 +530,12 @@ const styles = StyleSheet.create({
     paddingVertical: 14
   },
   pickerText: { fontSize: 13, color: '#333' },
-
-  imageUploadBox: {
-    borderWidth: 2,
-    borderColor: '#c3e0cf',
-    borderStyle: 'dashed',
-    borderRadius: 15,
-    padding: 30,
-    alignItems: 'center',
-    backgroundColor: '#f4faf6'
-  },
-  uploadText: {
-    marginTop: 10,
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1F9A4E'
-  },
-  uploadSubText: {
-    marginTop: 5,
-    fontSize: 12,
-    color: '#666'
-  },
-
-  submitBtn: {
-    backgroundColor: '#1F9A4E',
-    marginTop: 10,
-    paddingVertical: 16,
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#1F9A4E',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 5
-  },
-  submitBtnText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: 'bold'
-  },
-
   modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.5)', justifyContent: 'center', padding: 20 },
   modalContent: { backgroundColor: '#fff', borderRadius: 20, maxHeight: '80%', padding: 20 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 20 },
   modalTitle: { fontSize: 18, fontWeight: 'bold' },
   optionItem: { paddingVertical: 15, borderBottomWidth: 1, borderBottomColor: '#eee', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   optionText: { fontSize: 15, color: '#333' },
-
   errorText: {
     color: 'red',
     fontSize: 12,
@@ -610,6 +565,18 @@ const styles = StyleSheet.create({
     marginTop: 5,
     textAlign: 'right'
   },
+  imageUploadBox: {
+    backgroundColor: '#F1F8E9',
+    borderWidth: 1.5,
+    borderColor: '#1F9A4E',
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    marginVertical: 10
+  },
+  uploadText: { color: '#1F9A4E', fontWeight: 'bold', marginTop: 8 },
+  uploadSubText: { color: '#888', fontSize: 12, marginTop: 4 },
   imagePreviewContainer: {
     alignItems: 'center',
     position: 'relative',
@@ -638,11 +605,30 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 12
   },
+  submitBtn: {
+    backgroundColor: '#1F9A4E',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+    elevation: 3,
+    shadowColor: '#1F9A4E',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
+  },
+  submitBtnText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
   submitBtnDisabled: {
     backgroundColor: '#a5d6b8',
     elevation: 0,
     shadowOpacity: 0
-  }
+  },
 });
 
 export default ExpertDashboardScreen;
