@@ -11,6 +11,7 @@ import { AuthContext } from '../../App';
 const CATEGORIES = ['Vegetables', 'Fruits', 'Grains', 'Seeds', 'Fertilizers', 'Equipment', 'Other'];
 const UNITS = ['Kg', 'g', 'L', 'ml', 'piece', 'bag', 'box', 'bundle'];
 const SALE_TYPES = ['Retail Only', 'Wholesale Only', 'Retail & Wholesale'];
+const STATUS_OPTIONS = ['IN STOCK', 'OUT OF STOCK', 'SOLD OUT'];
 
 const PickerRow = ({ label, options, value, onChange }) => (
   <View style={styles.field}>
@@ -41,6 +42,7 @@ const AddProductScreen = ({ route, navigation }) => {
   const [saleType, setSaleType] = useState('Retail & Wholesale');
   const [contactNumber, setContactNumber] = useState('');
   const [location, setLocation] = useState('');
+  const [status, setStatus] = useState('IN STOCK');
   const [image, setImage] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -67,6 +69,7 @@ const AddProductScreen = ({ route, navigation }) => {
       setSaleType(editProduct.saleType || 'Retail & Wholesale');
       setContactNumber(editProduct.contactNumber || '');
       setLocation(editProduct.location || '');
+      setStatus(editProduct.status || 'IN STOCK');
       setImage(editProduct.image || null);
     }
   }, [editProduct]);
@@ -109,6 +112,7 @@ const AddProductScreen = ({ route, navigation }) => {
         image: image || '',
         contactNumber: contactNumber.trim(),
         location: location.trim(),
+        status,
       };
 
       if (editProduct) {
@@ -210,6 +214,10 @@ const AddProductScreen = ({ route, navigation }) => {
             </TouchableOpacity>
           ))}
         </View>
+        
+        {/* Stock Status */}
+        <PickerRow label="Stock Status" options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+
 
         {/* Product Image */}
         <View style={styles.field}>

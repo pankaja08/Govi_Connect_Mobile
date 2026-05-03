@@ -64,6 +64,11 @@ const ProductCard = ({ product, onPress, rank }) => {
             <Ionicons name={CATEGORY_ICONS[product.category] || 'leaf-outline'} size={40} color="#A5D6A7" />
           </View>
         )}
+        {product.status && product.status !== 'IN STOCK' && (
+          <View style={[styles.statusOverlay, product.status === 'SOLD OUT' ? styles.soldOverlay : styles.outOverlay]}>
+            <Text style={styles.statusOverlayText}>{product.status}</Text>
+          </View>
+        )}
       </View>
       <View style={styles.cardBody}>
         <Text style={styles.cardName} numberOfLines={2}>{product.name}</Text>
@@ -445,6 +450,33 @@ const styles = StyleSheet.create({
   saleTypeBadge: { alignSelf: 'flex-start', paddingHorizontal: 7, paddingVertical: 2, borderRadius: 8, borderWidth: 1, marginBottom: 4 },
   saleTypeText: { fontSize: 9, fontWeight: '700' },
   cardSeller: { fontSize: 10, color: '#888' },
+
+  statusOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.4)'
+  },
+  outOverlay: {
+    backgroundColor: 'rgba(255, 152, 0, 0.4)'
+  },
+  soldOverlay: {
+    backgroundColor: 'rgba(0, 0, 0, 0.6)'
+  },
+  statusOverlayText: {
+    color: '#fff',
+    fontWeight: '900',
+    fontSize: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 4,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    letterSpacing: 0.5
+  },
 
   // Browse
   browseContainer: { backgroundColor: '#F5F5F5', minHeight: 400, marginTop: 8 },
