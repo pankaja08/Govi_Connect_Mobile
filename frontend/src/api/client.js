@@ -4,13 +4,11 @@ import { Platform } from 'react-native';
 
 // Update this with your actual local IP address for physical device testing
 // On Web, localhost is generally safer for CORS and internal routing
-const BASE_URL = Platform.OS === 'web'
-  ? 'http://localhost:5000/api'
-  : 'http://192.168.8.154:5000/api';
+const BASE_URL = 'https://goviconnectmobile-production.up.railway.app/api';
 
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 20000,
 });
 
 // Interceptor to add JWT token to requests
