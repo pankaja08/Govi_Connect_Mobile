@@ -17,6 +17,12 @@ const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
+// Request Logging for Debugging
+app.use((req, res, next) => {
+  console.log(`📩 Incoming Request: ${req.method} ${req.url}`);
+  next();
+});
+
 // Middlewares
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -25,6 +31,10 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Routes
 app.get('/', (req, res) => {
   res.status(200).send('Govi Connect Backend is running! 🪴');
+});
+
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'success', message: 'Server is healthy' });
 });
 
 app.use('/api/auth', authRoutes);
@@ -68,6 +78,6 @@ app.use((err, req, res, next) => {
 });
 
 const port = process.env.PORT || 5000;
-app.listen(port, () => {
+app.listen(port, '0.0.0.0', () => {
   console.log(`Server is running on port ${port}...`);
 });

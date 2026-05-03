@@ -1,9 +1,8 @@
 const nodemailer = require('nodemailer');
 
-// Show a warning if email credentials are not set in the .env file
-if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-  console.warn('\n⚠️  WARNING: EMAIL_USER or EMAIL_PASS is missing in your .env file!');
-  console.warn('⚠️  Emails will not be sent. Please configure them to enable expert verification notifications.\n');
+// Show a warning if email credentials are not set (Only in development)
+if (process.env.NODE_ENV !== 'production' && (!process.env.EMAIL_USER || !process.env.EMAIL_PASS)) {
+  console.warn('⚠️  Email credentials missing. Notifications disabled.');
 }
 
 // Configure the transporter
