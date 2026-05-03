@@ -5,10 +5,6 @@ const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const dns = require('dns');
-
-// Fix for Node 17+ and Windows DNS issues with MongoDB Atlas
-dns.setDefaultResultOrder('ipv4first');
-
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const activityRoutes = require('./routes/activityRoutes');
@@ -27,6 +23,10 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // Routes
+app.get('/', (req, res) => {
+  res.status(200).send('Govi Connect Backend is running! 🪴');
+});
+
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/activities', activityRoutes);

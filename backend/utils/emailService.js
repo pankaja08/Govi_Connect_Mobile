@@ -8,11 +8,17 @@ if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
 
 // Configure the transporter
 const transporter = nodemailer.createTransport({
-  service: 'gmail',
+  host: 'smtp.gmail.com',
+  port: 465,
+  secure: true, // use SSL
   auth: {
     user: process.env.EMAIL_USER,
     // Gmail app passwords are shown with spaces but must be used without them
     pass: process.env.EMAIL_PASS ? process.env.EMAIL_PASS.replace(/\s/g, '') : ''
+  },
+  tls: {
+    // Force IPv4 and handle self-signed certificates in some environments
+    rejectUnauthorized: false
   }
 });
 
