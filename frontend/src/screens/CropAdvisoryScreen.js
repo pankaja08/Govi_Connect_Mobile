@@ -239,9 +239,9 @@ const CropAdvisoryScreen = () => {
       {/* ── Hero ── */}
       <LinearGradient colors={[C.primary, C.primaryDark]} style={styles.hero}>
         <View style={styles.heroBadge}>
-          <Text style={styles.heroBadgeText}>AI-Powered Advisory</Text>
+          <Text style={styles.heroBadgeText}>Data Driven Advisory</Text>
         </View>
-        <Text style={styles.heroTitle}>Smart Crop{'\n'}Recommendations</Text>
+        <Text style={styles.heroTitle}>Crop{'\n'}Recommendations</Text>
         <Text style={styles.heroSub}>
           Data-driven advice for your location, season & soil.
         </Text>

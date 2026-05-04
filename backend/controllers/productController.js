@@ -147,13 +147,13 @@ exports.update = async (req, res) => {
     if (!isOwner && req.user.role !== 'Admin')
       return res.status(403).json({ status: 'fail', message: 'Not authorised to update this product' });
 
-    const { name, description, price, quantity, unit, category, saleType, image, contactNumber, location } = req.body;
+    const { name, description, price, quantity, unit, category, saleType, image, contactNumber, location, status } = req.body;
 
     // Upload new image only if a new base64 is provided
     const imageUrl = image ? await uploadImageToCloudinary(image) : product.image;
 
-    const updates = { name, description, price, quantity, unit, category, saleType, contactNumber, location, image: imageUrl };
-    if (quantity !== undefined) updates.status = parseInt(quantity) > 0 ? 'In Stock' : 'Out of Stock';
+    const updates = { name, description, price, quantity, unit, category, saleType, contactNumber, location, image: imageUrl, status };
+    if (quantity !== undefined && status === undefined) updates.status = parseInt(quantity) > 0 ? 'In Stock' : 'Out of Stock';
 
     // Remove undefined keys
     Object.keys(updates).forEach(k => updates[k] === undefined && delete updates[k]);

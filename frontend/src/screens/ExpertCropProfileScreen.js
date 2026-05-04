@@ -297,6 +297,7 @@ const ExpertCropProfileScreen = ({ navigation }) => {
                 <TextInput
                     style={styles.input}
                     placeholder="Crop name"
+                    placeholderTextColor="#6d7a86"
                     value={form.cropName}
                     onChangeText={(value) => updateField('cropName', value)}
                 />
@@ -304,6 +305,7 @@ const ExpertCropProfileScreen = ({ navigation }) => {
                     style={[styles.input, styles.multilineInput]}
                     multiline
                     placeholder="Care instructions"
+                    placeholderTextColor="#6d7a86"
                     value={form.careInstructions}
                     onChangeText={(value) => updateField('careInstructions', value)}
                 />
@@ -378,12 +380,14 @@ const ExpertCropProfileScreen = ({ navigation }) => {
                 <TextInput
                     style={styles.input}
                     placeholder="Fertilizers (comma separated)"
+                    placeholderTextColor="#6d7a86"
                     value={form.fertilizers}
                     onChangeText={(value) => updateField('fertilizers', value)}
                 />
                 <TextInput
                     style={styles.input}
                     placeholder="Diseases (comma separated)"
+                    placeholderTextColor="#6d7a86"
                     value={form.diseases}
                     onChangeText={(value) => updateField('diseases', value)}
                 />
@@ -397,6 +401,7 @@ const ExpertCropProfileScreen = ({ navigation }) => {
                     <TextInput
                         style={styles.input}
                         placeholder="Or paste existing Cloudinary image URL"
+                        placeholderTextColor="#6d7a86"
                         value={form.imageUrl}
                         onChangeText={(value) => updateField('imageUrl', value)}
                     />
@@ -508,6 +513,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 12,
         paddingVertical: 10,
         marginBottom: 10,
+        color: '#1f2d3d',
     },
     multilineInput: { minHeight: 90, textAlignVertical: 'top' },
     multiSelectBlock: { marginBottom: 12 },

@@ -66,6 +66,38 @@ const MyProductsScreen = ({ navigation }) => {
         );
     };
 
+    const handleStatusChange = (product) => {
+        Alert.alert(
+            'Update Stock Status',
+            `Change status for "${product.name}"`,
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'In Stock',
+                    onPress: () => updateStatus(product._id, 'In Stock')
+                },
+                {
+                    text: 'Out of Stock',
+                    onPress: () => updateStatus(product._id, 'Out of Stock')
+                },
+                {
+                    text: 'Sold Out',
+                    onPress: () => updateStatus(product._id, 'Sold Out')
+                }
+            ]
+        );
+    };
+
+    const updateStatus = async (productId, newStatus) => {
+        try {
+            await productApi.update(productId, { status: newStatus });
+            Alert.alert('Success', `Status updated to ${newStatus}`);
+            fetchMyProducts();
+        } catch (err) {
+            Alert.alert('Error', 'Could not update status.');
+        }
+    };
+
     const renderProductItem = ({ item }) => (
         <View style={styles.card}>
             <View style={styles.cardContent}>
@@ -95,6 +127,14 @@ const MyProductsScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.actions}>
+                <TouchableOpacity
+                    style={[styles.actionBtn, styles.editBtn]}
+                    onPress={() => handleStatusChange(item)}
+                >
+                    <Ionicons name="pricetag-outline" size={18} color="#FF9800" />
+                    <Text style={[styles.editBtnText, { color: '#FF9800' }]}>Status</Text>
+                </TouchableOpacity>
+
                 <TouchableOpacity
                     style={[styles.actionBtn, styles.editBtn]}
                     onPress={() => handleEdit(item)}

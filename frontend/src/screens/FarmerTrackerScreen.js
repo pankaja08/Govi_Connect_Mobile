@@ -92,11 +92,24 @@ const formatDateToDDMMYYYY = (dateVal) => {
 
 const parseDDMMYYYY = (dateStr) => {
     if (!dateStr) return new Date();
-    const parts = dateStr.trim().split('/');
+    
+    // Convert dots or hyphens to slashes so we can process it uniformly
+    const sanitized = dateStr.trim().replace(/[\.\-]/g, '/');
+    const parts = sanitized.split('/');
+    
     if (parts.length === 3) {
+        // If the user typed YYYY/MM/DD (first part is 4 digits)
+        if (parts[0].length === 4) {
+            return new Date(parts[0], parts[1] - 1, parts[2]);
+        }
+        // Otherwise assume DD/MM/YYYY
         return new Date(parts[2], parts[1] - 1, parts[0]);
     }
-    return new Date(dateStr);
+
+    // Fallback: let JavaScript try to parse it. If it fails, it returns Invalid Date.
+    const d = new Date(dateStr);
+    // If the date is invalid, return today. If valid, return the parsed date.
+    return isNaN(d.getTime()) ? new Date() : d;
 };
 
 const FarmerTrackerScreen = () => {
@@ -119,7 +132,7 @@ const FarmerTrackerScreen = () => {
         cropName: '', season: 'Yala', plantedDate: '', harvestExpectedDate: '', fieldSize: '', seedVariety: ''
     });
     const [newActivityForm, setNewActivityForm] = useState({
-        activityType: 'FERTILIZER', activityName: '', activityDate: new Date()
+        activityType: 'FERTILIZER', activityName: '', activityDate: ''
     });
     const [yieldForm, setYieldForm] = useState({ yieldAmount: '', incomeAmount: '' });
     const [datePickerOpen, setDatePickerOpen] = useState({ open: false, field: null });
@@ -178,11 +191,11 @@ const FarmerTrackerScreen = () => {
         }
 
         try {
-            const payload = { 
-                ...newCropForm, 
+            const payload = {
+                ...newCropForm,
                 plantedDate: pDate,
                 harvestExpectedDate: hDate,
-                fieldSize: Number(newCropForm.fieldSize) 
+                fieldSize: Number(newCropForm.fieldSize)
             };
 
             if (currentCrop) {
@@ -218,13 +231,14 @@ const FarmerTrackerScreen = () => {
 
     const openActivityModal = (crop) => {
         setCurrentCrop(crop);
-        setNewActivityForm({ activityType: 'FERTILIZER', activityName: '', activityDate: new Date() });
+        setNewActivityForm({ activityType: 'FERTILIZER', activityName: '', activityDate: '' });
         setActivityModalVisible(true);
     };
 
     const handleSaveActivity = async () => {
         if (!newActivityForm.activityName) return showAlert('Error', 'Activity name is required');
-        const aDate = new Date(newActivityForm.activityDate || new Date());
+        
+        const aDate = parseDDMMYYYY(newActivityForm.activityDate);
         const pDate = new Date(currentCrop.plantedDate);
         aDate.setHours(0, 0, 0, 0);
         pDate.setHours(0, 0, 0, 0);
@@ -234,7 +248,11 @@ const FarmerTrackerScreen = () => {
         }
 
         try {
-            const res = await apiClient.post(`/farm/crops/${currentCrop._id}/activities`, newActivityForm);
+            const payload = {
+                ...newActivityForm,
+                activityDate: aDate
+            };
+            const res = await apiClient.post(`/farm/crops/${currentCrop._id}/activities`, payload);
             setCrops(crops.map(c => c._id === currentCrop._id ? res.data.data.crop : c));
             setActivityModalVisible(false);
         } catch (error) {
@@ -453,20 +471,20 @@ const FarmerTrackerScreen = () => {
                         />
 
                         <Text style={styles.inputLabel}>Planted Date (DD/MM/YYYY)</Text>
-                        <TextInput 
-                            style={styles.input} 
-                            value={newCropForm.plantedDate} 
-                            onChangeText={t => setNewCropForm({ ...newCropForm, plantedDate: t })} 
-                            placeholder="e.g. 15/05/2026" 
+                        <TextInput
+                            style={styles.input}
+                            value={newCropForm.plantedDate}
+                            onChangeText={t => setNewCropForm({ ...newCropForm, plantedDate: t })}
+                            placeholder="e.g. 15/05/2026"
                             keyboardType="numeric"
                         />
 
                         <Text style={styles.inputLabel}>Expected Harvest Date (DD/MM/YYYY)</Text>
-                        <TextInput 
-                            style={styles.input} 
-                            value={newCropForm.harvestExpectedDate} 
-                            onChangeText={t => setNewCropForm({ ...newCropForm, harvestExpectedDate: t })} 
-                            placeholder="e.g. 20/08/2026" 
+                        <TextInput
+                            style={styles.input}
+                            value={newCropForm.harvestExpectedDate}
+                            onChangeText={t => setNewCropForm({ ...newCropForm, harvestExpectedDate: t })}
+                            placeholder="e.g. 20/08/2026"
                             keyboardType="numeric"
                         />
 
@@ -511,20 +529,14 @@ const FarmerTrackerScreen = () => {
                     </View>
                     <Text style={styles.inputLabel}>Description</Text>
                     <TextInput style={styles.input} value={newActivityForm.activityName} onChangeText={t => setNewActivityForm({ ...newActivityForm, activityName: t })} placeholder="e.g. Applied Urea" />
-                    <Text style={styles.inputLabel}>Date Applied</Text>
-                    {Platform.OS === 'web' ? (
-                        <View style={styles.datePickerBtn}>
-                            <WebDatePicker value={newActivityForm.activityDate} onChange={(d) => setNewActivityForm({ ...newActivityForm, activityDate: d })} />
-                        </View>
-                    ) : (
-                        <TouchableOpacity
-                            style={styles.datePickerBtn}
-                            onPress={() => setDatePickerOpen({ open: true, field: 'activityDate' })}
-                        >
-                            <Ionicons name="calendar-outline" size={16} color="#9CA3AF" style={{ marginRight: 8 }} />
-                            <Text style={styles.datePickerText}>{newActivityForm.activityDate.toLocaleDateString()}</Text>
-                        </TouchableOpacity>
-                    )}
+                    <Text style={styles.inputLabel}>Date Applied (DD/MM/YYYY)</Text>
+                    <TextInput 
+                        style={styles.input} 
+                        value={newActivityForm.activityDate} 
+                        onChangeText={t => setNewActivityForm({ ...newActivityForm, activityDate: t })} 
+                        placeholder="e.g. 15/05/2026" 
+                        keyboardType="numeric"
+                    />
                     <TouchableOpacity style={styles.submitBtn} onPress={handleSaveActivity}>
                         <Text style={styles.submitBtnText}>Add Activity</Text>
                     </TouchableOpacity>

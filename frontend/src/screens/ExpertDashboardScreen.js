@@ -208,7 +208,22 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
   };
 
   const handlePublish = async () => {
-    if (!isFormValid) return;
+    const errors = [];
+    if (formData.title.trim().length < 5) errors.push('Title (min 5 characters)');
+    if (formData.season === 'Any Season') errors.push('Season');
+    if (formData.cropType === 'Any Crop') errors.push('Crop Type');
+    if (formData.farmingMethod === 'Any Method') errors.push('Farming Method');
+    if (contentLength < 200) errors.push(`Content (${contentLength}/200 characters)`);
+    if (!coverImage) errors.push('Cover Image');
+
+    if (errors.length > 0) {
+      Alert.alert(
+        'Missing Information',
+        'Please complete the following required fields:\n\n' + errors.map(e => `• ${e}`).join('\n')
+      );
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -382,8 +397,8 @@ const ExpertDashboardScreen = ({ navigation, route }) => {
             </View>
 
             <TouchableOpacity
-              style={[styles.submitBtn, !isFormValid && styles.submitBtnDisabled]}
-              disabled={!isFormValid || submitting}
+              style={[styles.submitBtn, submitting && styles.submitBtnDisabled]}
+              disabled={submitting}
               onPress={handlePublish}
             >
               {submitting ? (

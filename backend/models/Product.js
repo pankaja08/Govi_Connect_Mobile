@@ -31,7 +31,7 @@ const productSchema = new mongoose.Schema({
   },
   location:      { type: String, required: [true, 'Location is required'], trim: true },
   // Stock status (auto-managed by quantity)
-  status: { type: String, enum: ['In Stock', 'Out of Stock'], default: 'In Stock' },
+  status: { type: String, enum: ['In Stock', 'Out of Stock', 'Sold Out'], default: 'In Stock' },
   // Approval status — admin gate before going live
   approvalStatus: {
     type: String,
