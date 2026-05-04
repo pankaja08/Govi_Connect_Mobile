@@ -12,6 +12,8 @@ dns.setDefaultResultOrder('ipv4first');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const activityRoutes = require('./routes/activityRoutes');
+const blogRoutes = require('./routes/blogRoutes');
+const notificationRoutes = require('./routes/notificationRoutes');
 const productRoutes = require('./routes/productRoutes');
 
 const app = express();
@@ -24,6 +26,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/activities', activityRoutes);
+app.use('/api/blogs', blogRoutes);
+app.use('/api/notifications', notificationRoutes);
 app.use('/api/products', productRoutes);
 
 // Database connection
@@ -35,14 +39,16 @@ console.log(DB);
 console.log("============================");
 
 mongoose.connect(DB, {
-  serverSelectionTimeoutMS: 5000,
+  serverSelectionTimeoutMS: 30000, // Increase to 30 seconds for more stability
   family: 4, // Force IPv4
 })
   .then(() => console.log('✅ DB connection successful!'))
   .catch(err => {
     console.log('❌ DB connection error:');
-    console.error(err);
-    process.exit(1); // Stop the server if DB fails
+    console.error(err.message);
+    console.log('\n💡 TIP: Check if your IP address is whitelisted in MongoDB Atlas:');
+    console.log('   https://www.mongodb.com/docs/atlas/security-whitelist/');
+    process.exit(1); 
   });
 
 // Global Error Handler

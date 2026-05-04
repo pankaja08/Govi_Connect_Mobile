@@ -21,7 +21,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import apiClient from '../api/client';
 import { SRI_LANKA_MAP } from '../constants/locations';
-import { AuthContext } from '../../App';
+import { AuthContext } from '../context/AuthContext';
 
 const { width } = Dimensions.get('window');
 
@@ -199,10 +199,9 @@ const ProfileScreen = ({ navigation }) => {
           {/* Avatar and Info Card Overlapping */}
           <View style={styles.profileTopSection}>
             <View style={styles.avatarWrapper}>
-              <Image
-                source={{ uri: 'https://randomuser.me/api/portraits/men/32.jpg' }}
-                style={styles.avatar}
-              />
+              <View style={[styles.avatar, { backgroundColor: '#bdf0d0ff', justifyContent: 'center', alignItems: 'center' }]}>
+                <Ionicons name="person-outline" size={60} color="#1B4332" />
+              </View>
               {/* <View style={styles.levelBadge}>
                 <Ionicons name="star" size={30} color="#ffffffff" />
                 <Text style={styles.levelText}>0</Text>

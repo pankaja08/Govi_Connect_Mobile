@@ -38,22 +38,35 @@ const userSchema = new mongoose.Schema({
   district: { type: String, default: '' },
   contactInfo: { type: String, default: '' },
   location: { type: String, default: '' }, // Legacy field, keeping for compatibility
-  
+  savedBlogs: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Blog'
+  }],
+
+  // Status for expert verification
+  status: {
+    type: String,
+    enum: ['Pending', 'Active', 'Rejected'],
+    default: 'Active'
+  },
+
   // Expert specific fields
   expertRegNo: { type: String, default: '' },
+  areaOfExpertise: { type: String, default: '' },
   jobPosition: { type: String, default: '' },
-  assignedArea: { type: String, default: '' }
+  assignedArea: { type: String, default: '' },
+  rejectionReason: { type: String, default: '' }
 }, { timestamps: true });
 
 // Hash password before saving
-userSchema.pre('save', async function(next) {
+userSchema.pre('save', async function (next) {
   if (!this.isModified('password')) return next();
   this.password = await bcrypt.hash(this.password, 12);
   next();
 });
 
 // Method to compare password
-userSchema.methods.comparePassword = async function(candidatePassword, userPassword) {
+userSchema.methods.comparePassword = async function (candidatePassword, userPassword) {
   return await bcrypt.compare(candidatePassword, userPassword);
 };
 
