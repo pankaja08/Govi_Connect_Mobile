@@ -26,6 +26,9 @@ import BlogDetailScreen from '../screens/BlogDetailScreen';
 import AdminExpertRequestsScreen from '../screens/AdminExpertRequestsScreen';
 import ExpertRegistrationPendingScreen from '../screens/ExpertRegistrationPendingScreen';
 import ExpertResubmitScreen from '../screens/ExpertResubmitScreen';
+import ProductDetailScreen from '../screens/ProductDetailScreen';
+import AddProductScreen from '../screens/AddProductScreen';
+import MyProductsScreen from '../screens/MyProductsScreen';
 
 const Stack = createNativeStackNavigator();
 const Drawer = createDrawerNavigator();
@@ -133,6 +136,15 @@ const MainDrawer = () => {
         options={{ 
           title: 'Notifications',
           drawerIcon: ({color}) => <Ionicons name="notifications-outline" size={22} color={color} />,
+          headerShown: false
+        }} 
+      />
+      <Drawer.Screen 
+        name="MyProducts" 
+        component={MyProductsScreen} 
+        options={{ 
+          title: 'My Product Listings',
+          drawerIcon: ({color}) => <Ionicons name="list-outline" size={22} color={color} />,
           headerShown: false
         }} 
       />
@@ -363,6 +375,21 @@ const AppNavigator = ({ userToken, userRole, userStatus }) => {
                 headerStyle: { backgroundColor: '#2E7D32' },
                 headerTintColor: '#fff'
               }} 
+            />
+            <Stack.Screen
+              name="ProductDetail"
+              component={ProductDetailScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="AddProduct"
+              component={AddProductScreen}
+              options={{ headerShown: false }}
+            />
+            <Stack.Screen
+              name="MyProducts"
+              component={MyProductsScreen}
+              options={{ headerShown: false }}
             />
           </>
         )}

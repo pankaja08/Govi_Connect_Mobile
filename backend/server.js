@@ -14,6 +14,7 @@ const userRoutes = require('./routes/userRoutes');
 const activityRoutes = require('./routes/activityRoutes');
 const blogRoutes = require('./routes/blogRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
+const productRoutes = require('./routes/productRoutes');
 
 const app = express();
 
@@ -27,6 +28,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/activities', activityRoutes);
 app.use('/api/blogs', blogRoutes);
 app.use('/api/notifications', notificationRoutes);
+app.use('/api/products', productRoutes);
 
 // Database connection
 const DB = process.env.MONGODB_URI || 'mongodb://localhost:27017/gosconnect';
@@ -58,7 +60,7 @@ app.use((err, req, res, next) => {
   });
 });
 
-const port = process.env.PORT || 5000;
+const port = process.env.PORT || 5002;
 app.listen(port, () => {
   console.log(`Server is running on port ${port}...`);
 });

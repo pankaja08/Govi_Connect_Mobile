@@ -42,6 +42,9 @@ const LoginScreen = ({ navigation }) => {
       // Persist userId so comment sections can detect liked state
       if (userId) await AsyncStorage.setItem('userId', userId);
       await signIn(token, role, status);
+      const userId = data?.user?.id || '';
+      await AsyncStorage.setItem('userId', userId);
+      await signIn(token, role);
     } catch (error) {
       setLoading(false);
       const msg = error.response?.data?.message || 'Something went wrong';
