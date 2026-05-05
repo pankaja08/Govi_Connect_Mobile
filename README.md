@@ -4,7 +4,7 @@
 [![Year](https://img.shields.io/badge/Year-2%20Semester%202-blue.svg)](#)
 [![Stack](https://img.shields.io/badge/Stack-MERN-green.svg)](#)
 
-**Govi Connect** is an all-in-one mobile solution designed to modernize traditional farming. Developed for the **Web and Mobile Technologies (WMT)** module at SLIIT, this platform integrates AI diagnostics, community-driven knowledge sharing, and administrative governance to support the agricultural lifecycle.
+**Govi Connect** is an all-in-one mobile solution designed to modernize traditional farming. Developed for the **Web and Mobile Technologies (WMT)** module at SLIIT, this platform integrates farmer tracker, community-driven knowledge sharing, and administrative governance to support the agricultural lifecycle.
 
 ---
 
