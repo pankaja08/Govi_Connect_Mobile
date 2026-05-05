@@ -63,3 +63,9 @@ The application follows a **MERN stack** architecture, utilizing **Cloudinary** 
 | **Smart Crop Advisory System** | IT24102310 : 	Jayawardena H.S.P.P |
 | **Personal Farming Workspace** | IT24103260 : Udayanga G.W.A |
 | **Discussion Forum & Community Support** | IT24102555 :	Weerathunga B.A |
+
+## Mobile App Deployed 
+* Backend (30 days free tire) -  Railway -  https://goviconnectmobile-production.up.railway.app
+* Frontend - build apk using expogo (Android only)
+* Apk link -  https://expo.dev/accounts/panke1234/projects/govi_connect-frontend/builds/b3937556-d1c3-4f92-8440-4673819798f8
+* Any  users can download the apk and explore our mobile app
